@@ -26,6 +26,9 @@ import {
   resolveRelative,
 } from "./library";
 
+const desktopAPI =
+  typeof window.yamdv?.pickFiles === "function" ? window.yamdv : null;
+
 const welcome = `# A little space for your words\n\nOpen a Markdown file or a whole folder and settle into reading. Your documents stay on your device.\n\n## Everything in its place\n\n- **Folder** keeps your Markdown files together, including nested folders.\n- **Favorites** puts the documents you return to one click away.\n- **History** remembers your last 200 opened files.\n\n> Less interface. More room for ideas.\n\n## Markdown, beautifully rendered\n\nEnjoy tables, task lists, links, images, and fenced code blocks.\n\n\`\`\`js\nconst thought = 'Make room for what matters.';\nconsole.log(thought);\n\`\`\`\n\nChoose a light or dark appearance below, or let YAMDV follow your system.\n`;
 function Tree({ files, select, active, favorite, toggle, prefix = "" }) {
   const groups = new Map();
@@ -135,15 +138,19 @@ export default function App() {
     setError("");
     setBusy(true);
     try {
-      const text = window.yamdv
-        ? await window.yamdv.readFile(file.path)
-        : source.current.has(file.id)
-          ? await source.current.get(file.id).text()
-          : file.content;
+      const text =
+        desktopAPI && !file.snapshot
+          ? await desktopAPI.readFile(file.path)
+          : source.current.has(file.id)
+            ? await source.current.get(file.id).text()
+            : file.content;
       if (text === undefined)
         throw Error("Reopen this file or its folder to read it again.");
       if (token !== request.current) return;
-      const saved = { ...file, content: window.yamdv ? undefined : text };
+      const saved = {
+        ...file,
+        content: desktopAPI && !file.snapshot ? undefined : text,
+      };
       setActive(file);
       setContent(text);
       setHistory((h) => recordHistory(h, saved));
@@ -155,11 +162,14 @@ export default function App() {
   }
   async function toggle(file) {
     let text = file.content;
-    if (!window.yamdv && source.current.has(file.id))
+    if (source.current.has(file.id))
       text = await source.current.get(file.id).text();
     const saved = {
       ...file,
-      content: !window.yamdv && active?.id === file.id ? content : text,
+      content:
+        (!desktopAPI || file.snapshot) && active?.id === file.id
+          ? content
+          : text,
     };
     setFavorites((f) =>
       f.some((x) => x.id === file.id)
@@ -169,15 +179,15 @@ export default function App() {
   }
   async function open(kind) {
     setError("");
-    if (!window.yamdv) {
+    if (!desktopAPI) {
       (kind === "folder" ? folderPicker : picker).current.click();
       return;
     }
     setBusy(true);
     try {
       const result = await (kind === "folder"
-        ? window.yamdv.pickFolder()
-        : window.yamdv.pickFiles());
+        ? desktopAPI.pickFolder()
+        : desktopAPI.pickFiles());
       if (result) {
         const next = kind === "folder" ? result.files : result;
         setFiles(next);
@@ -200,7 +210,13 @@ export default function App() {
       const key = relative;
       source.current.set(key, f);
       if (isMarkdown(f.name))
-        next.push({ id: key, name: f.name, relative, path: relative });
+        next.push({
+          id: key,
+          name: f.name,
+          relative,
+          path: relative,
+          snapshot: true,
+        });
       else if (/\.(png|jpe?g|gif|svg|webp|avif)$/i.test(f.name)) {
         if (assets.current.has(key))
           URL.revokeObjectURL(assets.current.get(key));
@@ -241,7 +257,7 @@ export default function App() {
       return;
     }
     if (/^https?:/i.test(href)) {
-      if (window.yamdv) window.yamdv.openExternal(href);
+      if (desktopAPI) desktopAPI.openExternal(href);
       else window.open(href, "_blank", "noopener,noreferrer");
       return;
     }
@@ -515,7 +531,7 @@ export default function App() {
                 img: ({ src, alt }) => {
                   let url = src;
                   if (src && !/^(https?:|data:|blob:)/i.test(src) && active) {
-                    if (window.yamdv) {
+                    if (desktopAPI && !active.snapshot) {
                       const p = resolveRelative(active.path, src);
                       url =
                         "yamdv-asset://local" +

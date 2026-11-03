@@ -49,3 +49,12 @@ node tests/smoke.mjs   # Electron launch + renderer interaction and persistence
 ```
 
 The smoke test uses an isolated profile in `/tmp/yamdv-smoke-profile`. Run `npm run build` before it. It verifies light/dark controls, Markdown tables, script isolation, favorites and reopening saved browser documents after reload.
+
+### Checks performed during implementation
+
+- Production web build: passed.
+- Unit tests: 3 passed, including the 200-entry history boundary.
+- Live browser: file opening, recursive folder import, relative document navigation, tables/task lists, dark theme, favorites, and persistence after reload verified.
+- macOS ARM64 application bundle: built successfully.
+- Automated Electron UI launch: blocked by the development environment (process launch failure / EPERM), so native dialogs and desktop UI have not been verified interactively here. The smoke test is included for a normal desktop session.
+- Production dependency audit: zero known vulnerabilities at implementation time.
