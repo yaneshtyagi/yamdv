@@ -1,6 +1,6 @@
 {
   "name": "yamdv",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "Yet Another MarkDown Viewer",
   "author": "YAMDV",
@@ -24,7 +24,9 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "package.json"
+      "package.json",
+      "shared/**/*",
+      "build/icon.png"
     ],
     "directories": {
       "output": "release"
@@ -34,22 +36,35 @@
         "dmg",
         "zip"
       ],
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.icns"
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icon.ico"
     },
     "linux": {
-      "target": "AppImage"
+      "target": "AppImage",
+      "icon": "build/icon.png"
     },
     "electronDist": "node_modules/electron/dist"
   },
   "dependencies": {
+    "dompurify": "^3.4.17",
+    "github-markdown-css": "^5.9.0",
+    "github-slugger": "^2.0.0",
+    "katex": "^0.19.1",
     "lucide-react": "^0.468.0",
+    "mdast-util-to-string": "^4.0.0",
+    "mermaid": "^12.3.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1"
+    "rehype-katex": "^7.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5"
   },
   "devDependencies": {
     "@playwright/test": "latest",
@@ -58,6 +73,7 @@
     "electron": "latest",
     "electron-builder": "latest",
     "prettier": "^3.9.10",
+    "sharp": "^0.35.5",
     "vite": "latest",
     "vitest": "^4.1.12",
     "wait-on": "latest"
