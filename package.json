@@ -16,7 +16,9 @@
     "dist": "npm run build && electron-builder",
     "test": "vitest run",
     "test:smoke": "npm run build && node tests/smoke.mjs",
-    "format": "prettier --write src electron tests package.json index.html vite.config.js README.md"
+    "format": "prettier --write src shared electron scripts tests package.json index.html vite.config.js README.md",
+    "test:ui": "npm run build && node tests/ui.mjs",
+    "assets": "node scripts/assets.mjs"
   },
   "build": {
     "appId": "com.yamdv.app",
@@ -67,17 +69,17 @@
     "unified": "^11.0.5"
   },
   "devDependencies": {
-    "@playwright/test": "latest",
-    "@vitejs/plugin-react": "latest",
-    "concurrently": "latest",
-    "electron": "latest",
-    "electron-builder": "latest",
+    "@playwright/test": "^1.64.1",
+    "@vitejs/plugin-react": "^6.2.1",
+    "concurrently": "^10.0.6",
+    "electron": "^45.2.1",
+    "electron-builder": "^26.18.0",
     "fake-indexeddb": "^6.2.7",
     "prettier": "^3.9.10",
     "sharp": "^0.35.5",
-    "vite": "latest",
+    "vite": "^8.3.5",
     "vitest": "^4.1.12",
-    "wait-on": "latest"
+    "wait-on": "^9.5.1"
   },
   "overrides": {
     "katex": "$katex"
