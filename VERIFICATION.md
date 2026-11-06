@@ -4,7 +4,7 @@ Validated on macOS ARM64 with Node.js 26.13.0, Google Chrome, and Electron 45.2.
 
 | Check                                   | Result                                                                |
 | --------------------------------------- | --------------------------------------------------------------------- |
-| `npm test`                              | 26 tests passed across 6 files                                        |
+| `npm test`                              | 29 tests passed across 7 files                                        |
 | `npm run build`                         | Passed; static production build generated                             |
 | `node tests/ui.mjs`                     | Passed against the production web build in an isolated Chrome context |
 | `node tests/smoke.mjs`                  | Passed against the Electron source entry point                        |
@@ -54,3 +54,17 @@ YAMDV_PACKAGED="/absolute/path/to/YAMDV.app/Contents/MacOS/YAMDV" node tests/rea
 ```
 
 The per-tab trail remains available for the lifetime of the open tab or while the tab is in the existing 20-tab reopen cache. It is separate from the 200-file shared History list and is not persisted across window/application restarts.
+
+## Wrapping, reading cursor, document Vim, and UI zoom
+
+The production web build and macOS ARM64 package pass all existing UI and keyboard-reading suites plus `tests/cursor-ui.mjs` in Chrome and the actual packaged Electron application. The focused suite checks independent code-block wrapping, preserved wrap choices after tab switching, a visible reading caret and active rendered-line highlight, document h/j/k/l and gg/G motions, inclusive/reverse character visual selection, rendered-line selection across paragraphs, Escape, y and yy clipboard behavior, code copying without toolbar labels, UI zoom bindings with document zoom unchanged, and byte-for-byte preservation of source files. Tests save and restore the pre-existing clipboard without printing it.
+
+Unicode grapheme/word motions and Option-modified keyboard glyphs have unit coverage. The full browser suite verifies that UI zoom shortcuts do not change diagram zoom in full-screen mode. A native application-menu focus race exposed by the reading suite was fixed by assigning popup focus during layout. All six final UI suite runs passed: full browser, browser reading, browser cursor, packaged native smoke, packaged native reading, and packaged native cursor.
+
+```sh
+npm run test:cursor
+npm run test:cursor:desktop
+YAMDV_PACKAGED="/absolute/path/to/YAMDV.app/Contents/MacOS/YAMDV" node tests/cursor-ui.mjs --desktop
+```
+
+Vim support is a documented read-only navigation/selection subset, not an editable Vim engine. Visual copying uses rendered plain text; ordinary fenced blocks also provide literal code copying. Cursor positions and wrapping are retained with tab visits for the current session, not across application restarts. Browser clipboard policies may reject programmatic copying; in that case the selection remains for the system Copy shortcut. Native Windows/Linux shortcut behavior remains unverified on this macOS host.

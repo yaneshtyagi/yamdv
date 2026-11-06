@@ -168,6 +168,13 @@ try {
   await expect(diagram.locator("output")).toHaveText("110%");
   await page.keyboard.press("Meta+=");
   await expect(diagram.locator("output")).toHaveText("120%");
+  await page.keyboard.press("Meta+Alt+=");
+  await expect
+    .poll(() => page.locator(".ide").evaluate((el) => Number(el.style.zoom)))
+    .toBeCloseTo(1.1);
+  await expect(diagram.locator("output")).toHaveText("120%");
+  await page.keyboard.press("Meta+Alt+0");
+
   for (let n = 0; n < 38; n++)
     await diagram.getByRole("button", { name: "Zoom diagram in" }).click();
   await page.keyboard.press("ArrowRight");

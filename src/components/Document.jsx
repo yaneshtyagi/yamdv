@@ -12,11 +12,24 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { metadata } from "../markdown";
 import Diagram from "./Diagram";
+import ReadingCursor from "./ReadingCursor";
+import { copyText } from "../services/clipboard";
 import { resolveRelative } from "../library";
 import { resolveImage } from "../services/files";
-export default function Document({ tab, theme, onLink, onScroll, readerRef }) {
+export default function Document({
+  tab,
+  theme,
+  onLink,
+  onScroll,
+  readerRef,
+  vim,
+  positions,
+  codeWraps,
+  onReaderFocus,
+}) {
   const fallbackRoot = useRef();
   const root = readerRef || fallbackRoot;
+  useEffect(() => () => onReaderFocus?.(false), []);
   useEffect(() => {
     const el = root.current;
     if (!el) return;
@@ -68,8 +81,12 @@ export default function Document({ tab, theme, onLink, onScroll, readerRef }) {
       aria-label="Markdown document"
       data-view-id={tab.viewId}
       onScroll={(e) => onScroll(e.currentTarget.scrollTop)}
+      onFocus={(e) => onReaderFocus?.(e.target === e.currentTarget)}
+      onBlur={() => onReaderFocus?.(false)}
     >
-      <ReaderContext.Provider value={{ file: tab.file, theme, onLink }}>
+      <ReaderContext.Provider
+        value={{ file: tab.file, theme, onLink, viewId: tab.viewId, codeWraps }}
+      >
         <article className="markdown-body" style={{ zoom: tab.zoom }}>
           <Markdown
             skipHtml
@@ -97,6 +114,13 @@ export default function Document({ tab, theme, onLink, onScroll, readerRef }) {
           </Markdown>
         </article>
       </ReaderContext.Provider>
+      <ReadingCursor
+        readerRef={root}
+        viewId={tab.viewId}
+        content={tab.content}
+        vim={vim}
+        positions={positions}
+      />
     </div>
   );
 }
@@ -149,7 +173,7 @@ function MarkdownImage({ src, alt }) {
   return <LocalImage file={file} src={src} alt={alt} />;
 }
 function MarkdownPre({ children, node, ...props }) {
-  const { theme } = useContext(ReaderContext);
+  const { theme, viewId, codeWraps } = useContext(ReaderContext);
   const child = React.Children.toArray(children)[0];
   if (
     React.isValidElement(child) &&
@@ -161,6 +185,62 @@ function MarkdownPre({ children, node, ...props }) {
         theme={theme}
       />
     );
-  return <pre {...props}>{children}</pre>;
+  const blockKey = `${viewId}:${node?.position?.start.line || props["data-source-start"] || 0}`;
+  return (
+    <CodeBlock
+      key={blockKey}
+      blockKey={blockKey}
+      codeWraps={codeWraps}
+      language={
+        React.isValidElement(child)
+          ? child.props.className?.replace("language-", "")
+          : null
+      }
+      {...props}
+    >
+      {children}
+    </CodeBlock>
+  );
 }
 const components = { a: MarkdownLink, img: MarkdownImage, pre: MarkdownPre };
+
+function CodeBlock({ children, blockKey, codeWraps, language, ...props }) {
+  const [wrap, setWrap] = useState(
+      () => codeWraps.current.get(blockKey) || false,
+    ),
+    [message, setMessage] = useState("");
+  const pre = useRef();
+  return (
+    <section className="code-block">
+      <div className="code-toolbar" data-reader-ui>
+        <span>{language || "text"}</span>
+        <button
+          aria-pressed={wrap}
+          onClick={() => {
+            const value = !wrap;
+            codeWraps.current.set(blockKey, value);
+            setWrap(value);
+          }}
+        >
+          Wrap lines
+        </button>
+        <button
+          onClick={async () => {
+            try {
+              await copyText(pre.current.textContent);
+              setMessage("Copied");
+            } catch {
+              setMessage("Copy unavailable");
+            }
+          }}
+        >
+          Copy code
+        </button>
+        <span role="status">{message}</span>
+      </div>
+      <pre ref={pre} className={wrap ? "code-wrap" : ""} {...props}>
+        {children}
+      </pre>
+    </section>
+  );
+}

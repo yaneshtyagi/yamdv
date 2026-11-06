@@ -7,6 +7,7 @@ const {
   protocol,
   net,
   Menu,
+  clipboard,
 } = require("electron");
 const path = require("node:path");
 const fs = require("node:fs/promises");
@@ -117,15 +118,21 @@ function buildMenu() {
             enabled: !c.needs || !!ctx[c.needs],
             visible: index === 0,
             acceleratorWorksWhenHidden: true,
-            accelerator: !c.scope
-              ? key
-                  ?.replace("Mod", "CommandOrControl")
-                  .replace("ArrowLeft", "Left")
-                  .replace("ArrowRight", "Right")
-                  .replace("ArrowUp", "Up")
-                  .replace("ArrowDown", "Down")
-                  .replace("Minus", "-")
-              : undefined,
+            accelerator:
+              !c.scope &&
+              !(
+                process.platform !== "darwin" &&
+                ctx.readerVim &&
+                ["favorite", "search-active", "toggle-sidebar"].includes(c.id)
+              )
+                ? key
+                    ?.replace("Mod", "CommandOrControl")
+                    .replace("ArrowLeft", "Left")
+                    .replace("ArrowRight", "Right")
+                    .replace("ArrowUp", "Up")
+                    .replace("ArrowDown", "Down")
+                    .replace("Minus", "-")
+                : undefined,
             click: () => command(c.id),
           })),
       ),
@@ -284,6 +291,12 @@ app.whenReady().then(async () => {
           : `Access ${state}. Reopen or relink the file.`,
       );
     return fs.readFile(p, "utf8");
+  });
+  handle("copy-text", (_, text) => {
+    if (typeof text !== "string" || text.length > 10_000_000)
+      throw Error("Clipboard text exceeds the 10 MB limit.");
+    clipboard.writeText(text);
+    return true;
   });
   handle("file-status", (_, p) => status(p));
   handle("external", (_, url) => {

@@ -20,7 +20,9 @@
     "test:ui": "npm run build && node tests/ui.mjs",
     "assets": "node scripts/assets.mjs",
     "test:reading": "npm run build && node tests/reading-ui.mjs",
-    "test:reading:desktop": "npm run build && node tests/reading-ui.mjs --desktop"
+    "test:reading:desktop": "npm run build && node tests/reading-ui.mjs --desktop",
+    "test:cursor": "npm run build && node tests/cursor-ui.mjs",
+    "test:cursor:desktop": "npm run build && node tests/cursor-ui.mjs --desktop"
   },
   "build": {
     "appId": "com.yamdv.app",

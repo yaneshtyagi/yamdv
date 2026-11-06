@@ -21,10 +21,12 @@ export function matchesShortcut(
     return false;
   const actual = event.key.toLowerCase();
   return last === "Plus"
-    ? ["+", "="].includes(actual)
+    ? ["+", "="].includes(actual) ||
+        (mod && event.altKey && event.code === "Equal")
     : last === "Minus"
-      ? actual === "-"
-      : actual === last.toLowerCase();
+      ? actual === "-" || (mod && event.altKey && event.code === "Minus")
+      : actual === last.toLowerCase() ||
+        (last === "0" && mod && event.altKey && event.code === "Digit0");
 }
 export const commandKeys = (command) =>
   [command.key, ...(command.aliases || [])].filter(Boolean);

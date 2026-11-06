@@ -881,3 +881,103 @@ mark {
   width: 100%;
   margin: 7px 0 14px;
 }
+
+.markdown-body .code-block {
+  margin: 16px 0;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.code-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 9px;
+  background: var(--panel);
+  font:
+    10px -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  user-select: none;
+}
+.code-toolbar > span:first-child {
+  margin-right: auto;
+  color: var(--muted);
+}
+.code-toolbar button {
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  font-size: 10px;
+}
+.markdown-body .code-block pre {
+  margin: 0;
+  border-radius: 0;
+  border: 0;
+}
+.markdown-body .code-block pre.code-wrap,
+.markdown-body .code-block pre.code-wrap code {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+.reading-overlay {
+  position: fixed;
+  z-index: 5;
+  pointer-events: none;
+  overflow: hidden;
+}
+.reading-active-line {
+  position: absolute;
+  background: var(--accent);
+  opacity: 0.055;
+  border-left: 2px solid var(--accent);
+}
+.reading-overlay.focused .reading-active-line {
+  opacity: 0.11;
+}
+.reading-caret {
+  position: absolute;
+  width: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--bg);
+  animation: reading-blink 1.2s step-end infinite;
+}
+.reading-mode {
+  position: absolute;
+  right: 16px;
+  bottom: 8px;
+  padding: 5px 9px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  font:
+    10px -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+@keyframes reading-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reading-caret {
+    animation: none;
+  }
+}
+.reader-announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.markdown-body .katex-mathml,
+.diagram-toolbar,
+.diagram-fullscreen > small {
+  user-select: none;
+}

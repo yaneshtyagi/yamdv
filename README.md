@@ -48,7 +48,9 @@ Outline is built from the Markdown syntax tree, includes H1–H6 and setext head
 
 The theme icon opens Light, Dark, and System choices with the selected setting checked. System follows OS changes immediately. GitHub Markdown CSS is scoped to the reading area and follows the selected theme.
 
-Default zoom commands change **only the active document** (50–300%). Tabs keep their own zoom. The status-bar percentage resets it. Separate **Zoom Application UI In/Out/Reset** commands change the whole interface (70–150%). Diagram zoom is independent of both.
+A read-only cursor and active-line highlight mark the current rendered text position. Click text to place it; focus the document to use arrow-key movement. Vim Navigation also enables h/j/k/l, word/line/document motions, v/V visual selection, y/yy copy, and Escape in the reader. See [HELP.md](HELP.md#reading-cursor-and-document-vim) for the supported subset and clipboard behavior.
+
+Default zoom commands change **only the active document** (50–300%). Tabs keep their own zoom. The status-bar percentage resets it. Separate **Zoom Application UI In/Out/Reset** commands change the whole interface (70–150%) using Cmd+Option+Plus/Minus/0 (Ctrl+Alt+Plus/Minus/0 elsewhere). Diagram zoom is independent of both.
 
 ## Reference workspaces
 
@@ -93,7 +95,7 @@ File reads are limited to four concurrent jobs. Queries are debounced; changes c
 
 ## Markdown, math, and diagrams
 
-GitHub-flavored tables, task lists, strikethrough, autolinks, fenced code, heading links, and relative Markdown/image links are supported. Open the containing folder for relative document navigation. Code is presented as readable fenced blocks; no code is executed.
+GitHub-flavored tables, task lists, strikethrough, autolinks, fenced code, heading links, and relative Markdown/image links are supported. Open the containing folder for relative document navigation. Code is presented as readable fenced blocks with independent **Wrap lines** toggles and **Copy code** buttons; no code is executed. Wrap choices are retained with each tab visit for the current session.
 
 Inline `$...$` and display `$$...$$` LaTeX use KaTeX. Invalid or unsupported math remains local to the expression and does not prevent reading the document. Trust-requiring commands are disabled.
 
@@ -142,6 +144,8 @@ npm run test:ui          # production build + browser integration suite (Chrome)
 npm run test:smoke       # production build + native Electron integration suite
 npm run test:reading     # browser keyboard/reading workflow
 npm run test:reading:desktop # Electron keyboard/reading workflow
+npm run test:cursor      # browser wrapping/cursor/Vim/clipboard/UI-zoom workflow
+npm run test:cursor:desktop # corresponding Electron workflow
 npm run package          # desktop packaging
 npm run format           # format maintained source and tests
 npm run assets           # regenerate derivatives from logo/logo.png and GitHub CSS

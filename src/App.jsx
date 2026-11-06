@@ -103,7 +103,8 @@ export default function App() {
     [results, setResults] = useState([]),
     [resultIndex, setResultIndex] = useState(-1),
     [uiZoom, setUiZoom] = useState(1),
-    [ready, setReady] = useState(false);
+    [ready, setReady] = useState(false),
+    [readerFocused, setReaderFocused] = useState(false);
   const active = state.tabs.find((t) => t.id === state.activeId),
     workspace = findNode(library.workspaces, selectedWorkspace);
   const requests = useRef(new Map()),
@@ -112,7 +113,9 @@ export default function App() {
     navRef = useRef(),
     tabBar = useRef(),
     readerRef = useRef(),
-    menuButtonRef = useRef();
+    menuButtonRef = useRef(),
+    readerPositions = useRef(new Map()),
+    codeWraps = useRef(new Map());
   const accept = useCallback(
     (next) => setLibrary((old) => (next.revision >= old.revision ? next : old)),
     [],
@@ -394,6 +397,7 @@ export default function App() {
     results: !!results.length,
     back: !!active?.back?.length,
     forward: !!active?.forward?.length,
+    readerVim: readerFocused && library.vim,
   };
   async function executeCommand(id, targetReference = reference) {
     setPopup(null);
@@ -639,6 +643,7 @@ export default function App() {
     ctx.reference,
     ctx.back,
     ctx.forward,
+    ctx.readerVim,
   ]);
   function onLink(href, newTab) {
     if (!href) return;
@@ -1127,6 +1132,10 @@ export default function App() {
                       : { ...active, content: welcome }
                   }
                   readerRef={readerRef}
+                  onReaderFocus={setReaderFocused}
+                  vim={library.vim}
+                  positions={readerPositions}
+                  codeWraps={codeWraps}
                   theme={resolvedTheme}
                   onLink={onLink}
                   onScroll={(value) =>
@@ -1514,6 +1523,12 @@ export default function App() {
                 focus stays in place. Cmd/Ctrl+Shift+E focuses the reader;
                 Cmd/Ctrl+Shift+M opens the application menu. Cmd/Ctrl+[ and ]
                 navigate the active tab’s back/forward trail.
+              </p>
+              <p>
+                With the document focused, Vim Navigation adds h/j/k/l, w/b/e,
+                0/$, gg/G, Ctrl+D/U and Ctrl+F/B. Use v for character selection,
+                V for rendered-line selection, y to copy, yy to copy a line, and
+                Escape to cancel. The viewer remains read-only.
               </p>
               <button
                 aria-pressed={library.vim}

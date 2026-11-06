@@ -30,6 +30,31 @@ Use **Cmd/Ctrl+Shift+E** to focus the active document. Arrow keys, Page Up/Page 
 
 Optional **Vim Navigation** adds j/k (move), h/l (collapse/expand), gg (first), and G (last) in sidebar lists. Vim navigation does not intercept input fields or editable controls.
 
+## Reading cursor and document Vim
+
+Click rendered text to place the reading cursor. A thin caret and subtle active-line band mark your position; the band stays visible when focus moves to the sidebar. The cursor follows rendered/soft-wrapped lines and is kept with each tab visit, including while switching tabs or reopening a retained tab. Images and Mermaid diagrams have their own controls and are excluded from text navigation. The document remains read-only.
+
+Enable **Vim Navigation** and focus the reader with **Cmd/Ctrl+Shift+E**. The same setting enables Vim navigation in both the sidebar and the document. In the reader:
+
+| Keys            | Reading action                                                        |
+| --------------- | --------------------------------------------------------------------- |
+| `h` / `l`       | Previous / next character                                             |
+| `j` / `k`       | Next / previous rendered line                                         |
+| `w` / `b` / `e` | Next word start / previous word start / word end                      |
+| `0` / `$`       | Start / end of the rendered line                                      |
+| `gg` / `G`      | Start / end of the document                                           |
+| Ctrl+D / Ctrl+U | About half a screen down / up                                         |
+| Ctrl+F / Ctrl+B | About one screen down / up                                            |
+| `v`             | Enter character visual selection; motions extend the selection        |
+| `V` (Shift+v)   | Enter rendered-line visual selection; motions include entire lines    |
+| `y`             | Copy a visual or existing mouse selection, then return to normal mode |
+| `yy`            | Copy the current rendered line                                        |
+| Escape          | Cancel selection and return to normal mode without leaving the reader |
+
+Arrow keys also move the reading cursor. Mouse selection and the system Copy shortcut remain available. Visual selection uses the browser's real text selection and copies **rendered plain text**, not Markdown syntax. Code toolbar labels are excluded. Use **Copy code** to copy a code block's literal text. A copy failure keeps the selection and suggests the system Copy shortcut.
+
+This is a reading-oriented Vim subset: it does not implement editing, insert mode, operator/count combinations, or a full Vim command language. Vim keys do not intercept text inputs, buttons, link controls, search boxes, or dialogs. On Windows/Linux, Ctrl+D/F/B are used for Vim paging while the reader has Vim focus; the corresponding application operations remain available through buttons, menus, and the command palette.
+
 ## Sidebar sections
 
 - **Folder:** recursively browse the currently opened folder, or the set of opened/dropped files. Filter by file name or relative path.
@@ -62,7 +87,7 @@ Search is bounded to four concurrent reads, 2,048 query characters, 5 million so
 
 ## Markdown, images, math, and diagrams
 
-The reader uses GitHub Markdown styling and supports headings, links, images, lists, block quotes, fenced code, tables, task lists, strikethrough, and autolinks. Open the containing folder for relative Markdown links and local images. Heading links use the same unique heading IDs as Outline.
+The reader uses GitHub Markdown styling and supports headings, links, images, lists, block quotes, fenced code, tables, task lists, strikethrough, and autolinks. Each ordinary code block has **Wrap lines** and **Copy code** controls. Wrapping is off by default, can be toggled independently per block, and preserves indentation while breaking long lines to fit. Wrapping choices stay with a tab visit during the session; they do not edit the file or persist across restarts. Open the containing folder for relative Markdown links and local images. Heading links use the same unique heading IDs as Outline.
 
 Inline `$...$` and display `$$...$$` LaTeX math are rendered with KaTeX. Unsupported or invalid expressions remain local to the expression.
 
@@ -76,7 +101,7 @@ Raw Markdown HTML is disabled. Unsafe link schemes, executable content, and trus
 
 The theme icon offers **Light**, **Dark**, and **System**, with the current choice checked. System follows OS appearance changes immediately. The preference is shared across windows.
 
-Cmd/Ctrl+Plus / Minus / 0 change only the active Markdown document (50–300%). The status-bar percentage resets document zoom. Tabs and back/forward visits retain their own zoom. Separate **Zoom Application UI** commands adjust the entire interface (70–150%). Diagram controls have their own zoom state and take precedence in diagram full-screen mode.
+Cmd/Ctrl+Plus / Minus / 0 change only the active Markdown document (50–300%). The status-bar percentage resets document zoom. Tabs and back/forward visits retain their own zoom. Separate **Zoom Application UI** commands adjust the entire interface (70–150%) using **Cmd+Option+Plus / Minus / 0** on macOS or **Ctrl+Alt+Plus / Minus / 0** elsewhere. These Alt-modified bindings keep document and diagram zoom settings unchanged. Diagram controls have their own zoom state and take precedence in diagram full-screen mode.
 
 ## Menus, command palette, and help
 
@@ -102,6 +127,7 @@ F1 opens quick shortcut help. **Read Full Help** opens this guide in a new docum
 | Search all tabs                                     | Cmd+Shift+F                                        | Ctrl+Shift+F                                     |
 | Next / previous search match                        | F3 / Shift+F3                                      | F3 / Shift+F3                                    |
 | Document zoom in / out / reset                      | Cmd+Plus / Minus / 0                               | Ctrl+Plus / Minus / 0                            |
+| Application UI zoom in / out / reset                | Cmd+Option+Plus / Minus / 0                        | Ctrl+Alt+Plus / Minus / 0                        |
 | Toggle sidebar                                      | Cmd+B                                              | Ctrl+B                                           |
 | Folder / Favorites / History / Outline / Workspaces | Cmd+1 through 5                                    | Ctrl+1 through 5                                 |
 | Toggle favorite                                     | Cmd+D                                              | Ctrl+D                                           |

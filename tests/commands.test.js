@@ -84,3 +84,28 @@ describe("reading shortcuts", () => {
     ).toBe(false);
   });
 });
+
+describe("UI zoom shortcuts", () => {
+  it("uses separate Alt-modified bindings and handles macOS Option glyphs", () => {
+    for (const [id, key, code] of [
+      ["ui-in", "≠", "Equal"],
+      ["ui-out", "–", "Minus"],
+      ["ui-reset", "º", "Digit0"],
+    ]) {
+      const command = commands.find((c) => c.id === id);
+      const event = {
+        key,
+        code,
+        metaKey: true,
+        ctrlKey: false,
+        altKey: true,
+        shiftKey: false,
+      };
+      expect(matchesCommandShortcut(event, command, true)).toBe(true);
+      expect(
+        matchesCommandShortcut({ ...event, altKey: false }, command, true),
+      ).toBe(false);
+    }
+    expect(commands.find((c) => c.id === "ui-in").key).toBe("Mod+Alt+Plus");
+  });
+});

@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld("yamdv", {
       ? ipcRenderer.invoke("dropped-file", path)
       : Promise.resolve(null);
   },
+  copyText: (text) => ipcRenderer.invoke("copy-text", text),
   openExternal: (url) => ipcRenderer.invoke("external", url),
   newWindow: () => ipcRenderer.invoke("new-window"),
   getLibrary: () => ipcRenderer.invoke("get-library"),

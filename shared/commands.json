@@ -118,17 +118,20 @@
   {
     "id": "ui-in",
     "label": "Zoom Application UI In",
-    "group": "View"
+    "group": "View",
+    "key": "Mod+Alt+Plus"
   },
   {
     "id": "ui-out",
     "label": "Zoom Application UI Out",
-    "group": "View"
+    "group": "View",
+    "key": "Mod+Alt+Minus"
   },
   {
     "id": "ui-reset",
     "label": "Reset Application UI Zoom",
-    "group": "View"
+    "group": "View",
+    "key": "Mod+Alt+0"
   },
   {
     "id": "theme-light",

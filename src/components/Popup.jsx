@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from "react";
+import React, { useLayoutEffect, useRef } from "react";
 export default function Popup({ children, x, y, onClose, label = "Actions" }) {
   const ref = useRef();
-  useEffect(() => {
+  useLayoutEffect(() => {
     const before = document.activeElement;
     [...ref.current.querySelectorAll("button:not(:disabled),summary")]
       .find((el) => el.getClientRects().length)

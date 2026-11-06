@@ -137,7 +137,11 @@ export default function Diagram({ source, theme }) {
       e.stopPropagation();
       viewport.current?.scrollBy(...direction[e.key]);
     }
-    if ((e.metaKey || e.ctrlKey) && ["+", "=", "-", "0"].includes(e.key)) {
+    if (
+      (e.metaKey || e.ctrlKey) &&
+      !e.altKey &&
+      ["+", "=", "-", "0"].includes(e.key)
+    ) {
       e.preventDefault();
       e.stopPropagation();
       if (e.key === "0") setZoom(1);
