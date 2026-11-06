@@ -1,46 +1,229 @@
 [
- {"id":"open-files","label":"Open Markdown Files","group":"File","key":"Mod+O"},
- {"id":"open-folder","label":"Open Folder","group":"File","key":"Mod+Shift+O"},
- {"id":"new-tab","label":"New Tab","group":"File","key":"Mod+T","browserReserved":true},
- {"id":"close-tab","label":"Close Tab","group":"File","key":"Mod+W","browserReserved":true,"needs":"tab"},
- {"id":"reopen-tab","label":"Reopen Closed Tab","group":"File","key":"Mod+Shift+T","browserReserved":true,"needs":"closed"},
- {"id":"close-others","label":"Close Other Tabs","group":"File","needs":"tab"},
- {"id":"new-window","label":"New Window","group":"File","key":"Mod+Shift+N","browserReserved":true},
- {"id":"search-active","label":"Find in Active Document","group":"Edit","key":"Mod+F"},
- {"id":"search-tabs","label":"Search All Tabs","group":"Edit","key":"Mod+Shift+F"},
- {"id":"search-folder","label":"Search Current Folder","group":"Edit"},
- {"id":"search-favorites","label":"Search Favorites","group":"Edit"},
- {"id":"search-history","label":"Search History","group":"Edit"},
- {"id":"search-workspace","label":"Search Current Workspace","group":"Edit","needs":"workspace"},
- {"id":"next-match","label":"Next Search Match","group":"Navigate","key":"F3","needs":"results"},
- {"id":"previous-match","label":"Previous Search Match","group":"Navigate","key":"Shift+F3","needs":"results"},
- {"id":"zoom-in","label":"Zoom Document In","group":"View","key":"Mod+Plus","needs":"document"},
- {"id":"zoom-out","label":"Zoom Document Out","group":"View","key":"Mod+Minus","needs":"document"},
- {"id":"zoom-reset","label":"Reset Document Zoom","group":"View","key":"Mod+0","needs":"document"},
- {"id":"ui-in","label":"Zoom Application UI In","group":"View"},
- {"id":"ui-out","label":"Zoom Application UI Out","group":"View"},
- {"id":"ui-reset","label":"Reset Application UI Zoom","group":"View"},
- {"id":"theme-light","label":"Light Theme","group":"View"},
- {"id":"theme-dark","label":"Dark Theme","group":"View"},
- {"id":"theme-system","label":"System Theme","group":"View"},
- {"id":"toggle-sidebar","label":"Toggle Sidebar","group":"View","key":"Mod+B"},
- {"id":"sidebar-folder","label":"Show Folder","group":"Navigate","key":"Mod+1"},
- {"id":"sidebar-favorites","label":"Show Favorites","group":"Navigate","key":"Mod+2"},
- {"id":"sidebar-history","label":"Show History","group":"Navigate","key":"Mod+3"},
- {"id":"sidebar-outline","label":"Show Outline","group":"Navigate","key":"Mod+4"},
- {"id":"sidebar-workspaces","label":"Show Workspaces","group":"Navigate","key":"Mod+5"},
- {"id":"next-tab","label":"Next Tab","group":"Navigate","key":"Ctrl+Tab","needs":"tab"},
- {"id":"previous-tab","label":"Previous Tab","group":"Navigate","key":"Ctrl+Shift+Tab","needs":"tab"},
- {"id":"favorite","label":"Toggle Favorite","group":"Navigate","key":"Mod+D","needs":"document"},
- {"id":"workspace-create","label":"Create Workspace","group":"Workspace"},
- {"id":"workspace-nested","label":"Create Nested Workspace","group":"Workspace","needs":"workspace"},
- {"id":"workspace-rename","label":"Rename Workspace","group":"Workspace","needs":"workspace"},
- {"id":"workspace-delete","label":"Remove Workspace","group":"Workspace","needs":"workspace"},
- {"id":"workspace-add-files","label":"Add Files to Workspace","group":"Workspace","needs":"workspace"},
- {"id":"workspace-add-folder","label":"Add Folder to Workspace","group":"Workspace","needs":"workspace"},
- {"id":"workspace-clean","label":"Clean Unavailable References","group":"Workspace","needs":"workspace"},
- {"id":"workspace-check","label":"Check Workspace Availability","group":"Workspace","needs":"workspace"},
- {"id":"toggle-vim","label":"Toggle Vim Navigation","group":"Navigate"},
- {"id":"palette","label":"Command Palette","group":"Help","key":"Mod+Shift+P"},
- {"id":"help","label":"Keyboard Shortcuts and Help","group":"Help","key":"F1"}
+  {
+    "id": "open-files",
+    "label": "Open Markdown Files",
+    "group": "File",
+    "key": "Mod+O"
+  },
+  {
+    "id": "open-folder",
+    "label": "Open Folder",
+    "group": "File",
+    "key": "Mod+Shift+O"
+  },
+  {
+    "id": "new-tab",
+    "label": "New Tab",
+    "group": "File",
+    "key": "Mod+T",
+    "browserReserved": true
+  },
+  {
+    "id": "close-tab",
+    "label": "Close Tab",
+    "group": "File",
+    "key": "Mod+W",
+    "browserReserved": true,
+    "needs": "tab"
+  },
+  {
+    "id": "reopen-tab",
+    "label": "Reopen Closed Tab",
+    "group": "File",
+    "key": "Mod+Shift+T",
+    "browserReserved": true,
+    "needs": "closed"
+  },
+  {
+    "id": "close-others",
+    "label": "Close Other Tabs",
+    "group": "File",
+    "needs": "tab"
+  },
+  {
+    "id": "new-window",
+    "label": "New Window",
+    "group": "File",
+    "key": "Mod+Shift+N",
+    "browserReserved": true
+  },
+  {
+    "id": "search-active",
+    "label": "Find in Active Document",
+    "group": "Edit",
+    "key": "Mod+F"
+  },
+  {
+    "id": "search-tabs",
+    "label": "Search All Tabs",
+    "group": "Edit",
+    "key": "Mod+Shift+F"
+  },
+  { "id": "search-folder", "label": "Search Current Folder", "group": "Edit" },
+  { "id": "search-favorites", "label": "Search Favorites", "group": "Edit" },
+  { "id": "search-history", "label": "Search History", "group": "Edit" },
+  {
+    "id": "search-workspace",
+    "label": "Search Current Workspace",
+    "group": "Edit",
+    "needs": "workspace"
+  },
+  {
+    "id": "next-match",
+    "label": "Next Search Match",
+    "group": "Navigate",
+    "key": "F3",
+    "needs": "results"
+  },
+  {
+    "id": "previous-match",
+    "label": "Previous Search Match",
+    "group": "Navigate",
+    "key": "Shift+F3",
+    "needs": "results"
+  },
+  {
+    "id": "zoom-in",
+    "label": "Zoom Document In",
+    "group": "View",
+    "key": "Mod+Plus",
+    "needs": "document"
+  },
+  {
+    "id": "zoom-out",
+    "label": "Zoom Document Out",
+    "group": "View",
+    "key": "Mod+Minus",
+    "needs": "document"
+  },
+  {
+    "id": "zoom-reset",
+    "label": "Reset Document Zoom",
+    "group": "View",
+    "key": "Mod+0",
+    "needs": "document"
+  },
+  { "id": "ui-in", "label": "Zoom Application UI In", "group": "View" },
+  { "id": "ui-out", "label": "Zoom Application UI Out", "group": "View" },
+  { "id": "ui-reset", "label": "Reset Application UI Zoom", "group": "View" },
+  { "id": "theme-light", "label": "Light Theme", "group": "View" },
+  { "id": "theme-dark", "label": "Dark Theme", "group": "View" },
+  { "id": "theme-system", "label": "System Theme", "group": "View" },
+  {
+    "id": "toggle-sidebar",
+    "label": "Toggle Sidebar",
+    "group": "View",
+    "key": "Mod+B"
+  },
+  {
+    "id": "sidebar-folder",
+    "label": "Show Folder",
+    "group": "Navigate",
+    "key": "Mod+1"
+  },
+  {
+    "id": "sidebar-favorites",
+    "label": "Show Favorites",
+    "group": "Navigate",
+    "key": "Mod+2"
+  },
+  {
+    "id": "sidebar-history",
+    "label": "Show History",
+    "group": "Navigate",
+    "key": "Mod+3"
+  },
+  {
+    "id": "sidebar-outline",
+    "label": "Show Outline",
+    "group": "Navigate",
+    "key": "Mod+4"
+  },
+  {
+    "id": "sidebar-workspaces",
+    "label": "Show Workspaces",
+    "group": "Navigate",
+    "key": "Mod+5"
+  },
+  {
+    "id": "next-tab",
+    "label": "Next Tab",
+    "group": "Navigate",
+    "key": "Ctrl+Tab",
+    "needs": "tab"
+  },
+  {
+    "id": "previous-tab",
+    "label": "Previous Tab",
+    "group": "Navigate",
+    "key": "Ctrl+Shift+Tab",
+    "needs": "tab"
+  },
+  {
+    "id": "favorite",
+    "label": "Toggle Favorite",
+    "group": "Navigate",
+    "key": "Mod+D",
+    "needs": "document"
+  },
+  {
+    "id": "workspace-create",
+    "label": "Create Workspace",
+    "group": "Workspace"
+  },
+  {
+    "id": "workspace-nested",
+    "label": "Create Nested Workspace",
+    "group": "Workspace",
+    "needs": "workspace"
+  },
+  {
+    "id": "workspace-rename",
+    "label": "Rename Workspace",
+    "group": "Workspace",
+    "needs": "workspace"
+  },
+  {
+    "id": "workspace-delete",
+    "label": "Remove Workspace",
+    "group": "Workspace",
+    "needs": "workspace"
+  },
+  {
+    "id": "workspace-add-files",
+    "label": "Add Files to Workspace",
+    "group": "Workspace",
+    "needs": "workspace"
+  },
+  {
+    "id": "workspace-add-folder",
+    "label": "Add Folder to Workspace",
+    "group": "Workspace",
+    "needs": "workspace"
+  },
+  {
+    "id": "workspace-clean",
+    "label": "Clean Unavailable References",
+    "group": "Workspace",
+    "needs": "workspace"
+  },
+  {
+    "id": "workspace-check",
+    "label": "Check Workspace Availability",
+    "group": "Workspace",
+    "needs": "workspace"
+  },
+  { "id": "toggle-vim", "label": "Toggle Vim Navigation", "group": "Navigate" },
+  {
+    "id": "palette",
+    "label": "Command Palette",
+    "group": "Help",
+    "key": "Mod+Shift+P"
+  },
+  {
+    "id": "help",
+    "label": "Keyboard Shortcuts and Help",
+    "group": "Help",
+    "key": "F1"
+  }
 ]
