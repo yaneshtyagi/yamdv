@@ -4,7 +4,7 @@ Validated on macOS ARM64 with Node.js 26.13.0, Google Chrome, and Electron 45.2.
 
 | Check                                   | Result                                                                |
 | --------------------------------------- | --------------------------------------------------------------------- |
-| `npm test`                              | 22 tests passed across 6 files                                        |
+| `npm test`                              | 26 tests passed across 6 files                                        |
 | `npm run build`                         | Passed; static production build generated                             |
 | `node tests/ui.mjs`                     | Passed against the production web build in an isolated Chrome context |
 | `node tests/smoke.mjs`                  | Passed against the Electron source entry point                        |
@@ -40,3 +40,17 @@ Unit tests cover tab operations, history limit/deduplication, one-time legacy mi
 - Supplied `logo/logo.png` SHA-256 before and after:
   `e158815abaeeb8afb599494390012834812703610661955efa9dece6828939fd`.
 - Workspaces are references; neither removal nor janitor operations delete or write source documents.
+
+## Keyboard reading and tab-history improvements
+
+The new `tests/reading-ui.mjs` workflow passes in Chrome and against the actual packaged macOS application (`--desktop` with `YAMDV_PACKAGED`). It verifies Shift+Up/Down scrolling from both folder and workspace lists without losing sidebar focus; keyboard and palette commands to focus the document; Ctrl+Tab plus Cmd+Option+Left/Right; per-tab back/forward scroll and zoom restoration; forward-branch replacement; full history after close/reopen; palette search focus using actual typing; current-file workspace creation/addition, nested destinations and deduplication; the application-menu shortcut with focus restoration; and the built-in full help guide.
+
+The full browser suite also verifies application-menu visibility above a full-screen diagram. Both the full browser suite and packaged native smoke suite pass after these changes. Model tests traverse a 512-document trail through close/reopen to verify there is no step cap and that cached content is retained. Shortcut uniqueness checks include aliases.
+
+```sh
+npm run test:reading
+npm run test:reading:desktop
+YAMDV_PACKAGED="/absolute/path/to/YAMDV.app/Contents/MacOS/YAMDV" node tests/reading-ui.mjs --desktop
+```
+
+The per-tab trail remains available for the lifetime of the open tab or while the tab is in the existing 20-tab reopen cache. It is separate from the 200-file shared History list and is not persisted across window/application restarts.

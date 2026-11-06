@@ -16,7 +16,7 @@ export function matchesShortcut(
     event.metaKey !== (mod && mac) ||
     event.ctrlKey !== (parts.includes("Ctrl") || (mod && !mac)) ||
     (last !== "Plus" && event.shiftKey !== parts.includes("Shift")) ||
-    event.altKey
+    event.altKey !== parts.includes("Alt")
   )
     return false;
   const actual = event.key.toLowerCase();
@@ -26,9 +26,24 @@ export function matchesShortcut(
       ? actual === "-"
       : actual === last.toLowerCase();
 }
+export const commandKeys = (command) =>
+  [command.key, ...(command.aliases || [])].filter(Boolean);
+export function matchesCommandShortcut(
+  event,
+  command,
+  mac = /Mac/.test(navigator.platform),
+) {
+  return commandKeys(command).some((key) => matchesShortcut(event, key, mac));
+}
 export function shortcutLabel(key) {
+  if (Array.isArray(key)) return key.map(shortcutLabel).join(" / ");
   return (key || "")
     .replace("Mod", /Mac/.test(navigator.platform) ? "⌘" : "Ctrl")
     .replace("Plus", "+")
-    .replace("Minus", "−");
+    .replace("Minus", "−")
+    .replace("Alt", /Mac/.test(navigator.platform) ? "⌥" : "Alt")
+    .replace("ArrowLeft", "←")
+    .replace("ArrowRight", "→")
+    .replace("ArrowUp", "↑")
+    .replace("ArrowDown", "↓");
 }

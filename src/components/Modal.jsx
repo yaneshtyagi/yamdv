@@ -1,9 +1,12 @@
-import React, { useEffect, useRef } from "react";
+import React, { useLayoutEffect, useRef } from "react";
 export default function Modal({ title, children, onClose, className = "" }) {
   const ref = useRef();
-  useEffect(() => {
+  useLayoutEffect(() => {
     const before = document.activeElement;
     ref.current.showModal();
+    ref.current
+      .querySelector("[data-autofocus],input,select,textarea")
+      ?.focus();
     return () => before?.isConnected && before.focus();
   }, []);
   return (

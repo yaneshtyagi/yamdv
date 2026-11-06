@@ -24,6 +24,8 @@ import {
   Plus,
   X,
   Command,
+  ArrowLeft,
+  ArrowRight,
 } from "lucide-react";
 import {
   tabsReducer,
@@ -54,7 +56,8 @@ import {
 import {
   commands,
   commandEnabled,
-  matchesShortcut,
+  matchesCommandShortcut,
+  commandKeys,
   shortcutLabel,
 } from "./commands";
 import { analyzeMarkdown } from "./markdown";
@@ -69,6 +72,7 @@ import Modal from "./components/Modal";
 import Popup from "./components/Popup";
 import SearchPanel from "./components/SearchPanel";
 import { scopeFiles } from "./services/search";
+import helpText from "../HELP.md?raw";
 const Document = lazy(() => import("./components/Document"));
 const sections = [
   ["folder", FolderOpen, "Folder"],
@@ -106,7 +110,9 @@ export default function App() {
     scrolls = useRef(new Map()),
     runRef = useRef(),
     navRef = useRef(),
-    tabBar = useRef();
+    tabBar = useRef(),
+    readerRef = useRef(),
+    menuButtonRef = useRef();
   const accept = useCallback(
     (next) => setLibrary((old) => (next.revision >= old.revision ? next : old)),
     [],
@@ -186,7 +192,8 @@ export default function App() {
   ) {
     const targetId = state.activeId,
       token = uid(),
-      key = newTab ? token : targetId || "empty";
+      key = newTab ? token : targetId || "empty",
+      sourceView = active?.viewId;
     requests.current.set(key, token);
     setBusy(true);
     setError("");
@@ -204,6 +211,10 @@ export default function App() {
         content,
         newTab,
         tabId: targetId,
+        scroll:
+          readerRef.current?.dataset.viewId === sourceView
+            ? readerRef.current.scrollTop
+            : scrolls.current.get(sourceView),
         target,
       });
       await change({ type: "opened", file: saved });
@@ -260,7 +271,12 @@ export default function App() {
       dispatch({
         type: "patch",
         id: active.id,
-        patch: { scroll: scrolls.current.get(active.id) ?? active.scroll },
+        patch: {
+          scroll:
+            readerRef.current?.dataset.viewId === active.viewId
+              ? readerRef.current.scrollTop
+              : (scrolls.current.get(active.viewId) ?? active.scroll),
+        },
       });
   }
   function activate(id) {
@@ -376,6 +392,8 @@ export default function App() {
     closed: !!state.closed.length,
     workspace: !!workspace,
     results: !!results.length,
+    back: !!active?.back?.length,
+    forward: !!active?.forward?.length,
   };
   async function executeCommand(id, targetReference = reference) {
     setPopup(null);
@@ -385,6 +403,78 @@ export default function App() {
       !commandEnabled(c, { ...ctx, reference: !!targetReference?.nodeId })
     )
       return;
+    if (id === "focus-document") {
+      requestAnimationFrame(() =>
+        readerRef.current?.focus({ preventScroll: true }),
+      );
+      return;
+    }
+    if (id === "scroll-document-up" || id === "scroll-document-down") {
+      const reader = readerRef.current;
+      if (reader)
+        reader.scrollBy({
+          top:
+            (id === "scroll-document-up" ? -1 : 1) *
+            Math.max(80, reader.clientHeight * 0.65),
+          behavior: "instant",
+        });
+      return;
+    }
+    if (id === "go-back" || id === "go-forward") {
+      const direction = id === "go-back" ? "back" : "forward";
+      const destination = active?.[direction]?.at(-1);
+      if (!destination) return;
+      requests.current.delete(active.id);
+      dispatch({
+        type: "navigate",
+        direction,
+        scroll:
+          readerRef.current?.scrollTop ?? scrolls.current.get(active.viewId),
+      });
+      await change({ type: "opened", file: destination.file });
+      return;
+    }
+    if (id === "application-menu") {
+      setModal(null);
+      const r = menuButtonRef.current?.getBoundingClientRect();
+      requestAnimationFrame(() =>
+        setPopup({ type: "app", x: r?.left || 8, y: r?.bottom || 44 }),
+      );
+      return;
+    }
+    if (id === "workspace-add-current") {
+      const saved = {
+        ...active.file,
+        content:
+          active.file.snapshot && !active.file.handle
+            ? active.content
+            : undefined,
+      };
+      setModal({
+        type: "add-current",
+        file: saved,
+        workspaceId: workspace?.id || library.workspaces[0]?.id || "new",
+        name: "",
+      });
+      return;
+    }
+    if (id === "read-help") {
+      setModal(null);
+      return openDocument(
+        {
+          id: "yamdv:help",
+          name: "YAMDV Help.md",
+          relative: "YAMDV Help.md",
+          path: "YAMDV Help.md",
+          snapshot: true,
+          builtin: true,
+          content: helpText,
+        },
+        true,
+        null,
+        helpText,
+      );
+    }
     if (id === "open-new-tab") return openDocument(active.file, true);
     if (id.startsWith("diagram-")) {
       window.dispatchEvent(new CustomEvent("diagram-command", { detail: id }));
@@ -502,6 +592,9 @@ export default function App() {
     if (id === "palette") {
       setPaletteQuery("");
       setModal({ type: "palette" });
+      requestAnimationFrame(() =>
+        document.querySelector('input[aria-label="Find a Command"]')?.focus(),
+      );
       return;
     }
     if (id === "help") setModal({ type: "help" });
@@ -517,8 +610,10 @@ export default function App() {
         if (e.key === "Escape") return;
         return;
       }
-      const cmd = commands.find((c) => matchesShortcut(e, c.key));
+      const cmd = commands.find((c) => matchesCommandShortcut(e, c));
       if (cmd) {
+        if (cmd.scope === "sidebar" && !navRef.current?.contains(e.target))
+          return;
         if (!desktop && cmd.browserReserved) return;
         e.preventDefault();
         runRef.current(cmd.id);
@@ -542,6 +637,8 @@ export default function App() {
     ctx.results,
     ctx.diagram,
     ctx.reference,
+    ctx.back,
+    ctx.forward,
   ]);
   function onLink(href, newTab) {
     if (!href) return;
@@ -649,11 +746,9 @@ export default function App() {
         <button
           className="icon-button"
           aria-label="Application Menu"
+          ref={menuButtonRef}
           title="Application menu and commands"
-          onClick={(e) => {
-            const r = e.currentTarget.getBoundingClientRect();
-            setPopup({ type: "app", x: r.left, y: r.bottom });
-          }}
+          onClick={() => run("application-menu")}
         >
           <Menu size={17} />
         </button>
@@ -977,19 +1072,44 @@ export default function App() {
               aria-labelledby={"tab-" + active.id}
             >
               <div className="document-info">
+                <button
+                  aria-label="Go Back"
+                  title="Go Back (⌘/Ctrl+[)"
+                  disabled={!ctx.back}
+                  onClick={() => run("go-back")}
+                >
+                  <ArrowLeft size={14} />
+                </button>
+                <button
+                  aria-label="Go Forward"
+                  title="Go Forward (⌘/Ctrl+])"
+                  disabled={!ctx.forward}
+                  onClick={() => run("go-forward")}
+                >
+                  <ArrowRight size={14} />
+                </button>
                 <span title={active.file?.path}>
                   {active.file?.relative || "Start reading"}
                 </span>
                 {active.file && (
-                  <button
-                    aria-pressed={library.favorites.some(
-                      (f) => f.id === active.file.id,
-                    )}
-                    aria-label="Toggle Favorite"
-                    onClick={() => favorite(active.file)}
-                  >
-                    <Star size={13} />
-                  </button>
+                  <>
+                    <button
+                      aria-label="Add Current File to Workspace"
+                      title="Add Current File to Workspace"
+                      onClick={() => run("workspace-add-current")}
+                    >
+                      <Library size={14} />
+                    </button>
+                    <button
+                      aria-pressed={library.favorites.some(
+                        (f) => f.id === active.file.id,
+                      )}
+                      aria-label="Toggle Favorite"
+                      onClick={() => favorite(active.file)}
+                    >
+                      <Star size={13} />
+                    </button>
+                  </>
                 )}
               </div>
               <Suspense
@@ -1002,13 +1122,16 @@ export default function App() {
                       ? {
                           ...active,
                           scroll:
-                            scrolls.current.get(active.id) ?? active.scroll,
+                            scrolls.current.get(active.viewId) ?? active.scroll,
                         }
                       : { ...active, content: welcome }
                   }
+                  readerRef={readerRef}
                   theme={resolvedTheme}
                   onLink={onLink}
-                  onScroll={(value) => scrolls.current.set(active.id, value)}
+                  onScroll={(value) =>
+                    scrolls.current.set(active.viewId, value)
+                  }
                 />
               </Suspense>
             </div>
@@ -1134,7 +1257,7 @@ export default function App() {
                   onClick={() => run(id)}
                 >
                   {c.label}
-                  <kbd>{shortcutLabel(c.key)}</kbd>
+                  <kbd>{shortcutLabel(commandKeys(c))}</kbd>
                 </button>
               );
             })
@@ -1153,7 +1276,7 @@ export default function App() {
                         onClick={() => run(c.id)}
                       >
                         {c.label}
-                        <kbd>{shortcutLabel(c.key)}</kbd>
+                        <kbd>{shortcutLabel(commandKeys(c))}</kbd>
                       </button>
                     ))}
                 </details>
@@ -1164,12 +1287,15 @@ export default function App() {
       )}
       {modal && (
         <Modal
+          key={modal.type}
           title={
             modal.type === "palette"
               ? "Command Palette"
               : modal.type === "help"
                 ? "Keyboard Shortcuts and Help"
-                : modal.title
+                : modal.type === "add-current"
+                  ? "Add Current File to Workspace"
+                  : modal.title
           }
           onClose={() => setModal(null)}
           className={modal.type === "palette" ? "palette" : ""}
@@ -1178,6 +1304,7 @@ export default function App() {
             <>
               <input
                 autoFocus
+                data-autofocus
                 aria-label="Find a Command"
                 placeholder="Type a command…"
                 value={paletteQuery}
@@ -1229,11 +1356,87 @@ export default function App() {
                   >
                     <small>{c.group}</small>
                     <span>{c.label}</span>
-                    <kbd>{shortcutLabel(c.key)}</kbd>
+                    <kbd>{shortcutLabel(commandKeys(c))}</kbd>
                   </button>
                 ))}
               </div>
             </>
+          ) : modal.type === "add-current" ? (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                  let id = modal.workspaceId;
+                  if (id === "new") {
+                    if (!modal.name.trim()) return;
+                    id = uid();
+                    await change({
+                      type: "workspace-create",
+                      id,
+                      name: modal.name.trim(),
+                    });
+                  } else if (!findNode(library.workspaces, id))
+                    throw Error(
+                      "The selected workspace no longer exists. Choose another workspace.",
+                    );
+                  await change({
+                    type: "workspace-add",
+                    id,
+                    nodes: [{ id: uid(), type: "file", file: modal.file }],
+                  });
+                  setSelectedWorkspace(id);
+                  setSection("workspaces");
+                  setSearchScope(null);
+                  setSidebar(true);
+                  setModal(null);
+                } catch (error) {
+                  setError(error.message);
+                }
+              }}
+            >
+              <p>
+                Add a reference to <strong>{modal.file.name}</strong>. The
+                source file stays in its current location.
+              </p>
+              <label>
+                Destination workspace
+                <select
+                  data-autofocus
+                  value={modal.workspaceId}
+                  onChange={(e) =>
+                    setModal({ ...modal, workspaceId: e.target.value })
+                  }
+                >
+                  {workspaceOptions(library.workspaces).map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                  <option value="new">Create a new workspace…</option>
+                </select>
+              </label>
+              {modal.workspaceId === "new" && (
+                <label>
+                  New workspace name
+                  <input
+                    required
+                    value={modal.name}
+                    maxLength={200}
+                    onChange={(e) =>
+                      setModal({ ...modal, name: e.target.value })
+                    }
+                  />
+                </label>
+              )}
+              <div className="modal-actions">
+                <button type="button" onClick={() => setModal(null)}>
+                  Cancel
+                </button>
+                <button className="primary" type="submit">
+                  Add Reference
+                </button>
+              </div>
+            </form>
           ) : modal.type === "name" ? (
             <form
               onSubmit={async (e) => {
@@ -1298,6 +1501,7 @@ export default function App() {
             </>
           ) : (
             <div className="help-content">
+              <button onClick={() => run("read-help")}>Read Full Help</button>
               <p>
                 Files replace the active tab. Use a file’s actions menu,
                 ⌘/Ctrl-click, Shift-click, or middle-click to open in a new tab.
@@ -1306,7 +1510,10 @@ export default function App() {
                 Arrow keys navigate lists. Home/End jump to the first/last
                 entry. Left/Right collapse/expand folders. Enter opens. Optional
                 Vim mode adds j/k, h/l, gg/G. Bindings are inactive in input
-                fields.
+                fields. Shift+Up/Down scrolls the active file while sidebar
+                focus stays in place. Cmd/Ctrl+Shift+E focuses the reader;
+                Cmd/Ctrl+Shift+M opens the application menu. Cmd/Ctrl+[ and ]
+                navigate the active tab’s back/forward trail.
               </p>
               <button
                 aria-pressed={library.vim}
@@ -1335,7 +1542,7 @@ export default function App() {
                       <tr key={c.id}>
                         <td>{c.label}</td>
                         <td>
-                          <kbd>{shortcutLabel(c.key)}</kbd>
+                          <kbd>{shortcutLabel(commandKeys(c))}</kbd>
                         </td>
                       </tr>
                     ))}
@@ -1351,5 +1558,16 @@ export default function App() {
         </Modal>
       )}
     </div>
+  );
+}
+
+function workspaceOptions(nodes, prefix = "") {
+  return nodes.flatMap((node) =>
+    node.type === "folder"
+      ? [
+          { id: node.id, label: prefix + node.name },
+          ...workspaceOptions(node.children, prefix + node.name + " / "),
+        ]
+      : [],
   );
 }

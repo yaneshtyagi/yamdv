@@ -16,9 +16,11 @@
     "dist": "npm run build && electron-builder",
     "test": "vitest run",
     "test:smoke": "npm run build && node tests/smoke.mjs",
-    "format": "prettier --write src shared electron scripts tests package.json index.html vite.config.js README.md",
+    "format": "prettier --write src shared electron scripts tests package.json index.html vite.config.js README.md HELP.md VERIFICATION.md",
     "test:ui": "npm run build && node tests/ui.mjs",
-    "assets": "node scripts/assets.mjs"
+    "assets": "node scripts/assets.mjs",
+    "test:reading": "npm run build && node tests/reading-ui.mjs",
+    "test:reading:desktop": "npm run build && node tests/reading-ui.mjs --desktop"
   },
   "build": {
     "appId": "com.yamdv.app",

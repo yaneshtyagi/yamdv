@@ -109,15 +109,26 @@ function buildMenu() {
     label: group,
     submenu: commands
       .filter((c) => c.group === group)
-      .map((c) => ({
-        label: c.label,
-        enabled: !c.needs || !!ctx[c.needs],
-        accelerator: c.key
-          ?.replace("Mod", "CommandOrControl")
-          .replace("Plus", "Plus")
-          .replace("Minus", "-"),
-        click: () => command(c.id),
-      })),
+      .flatMap((c) =>
+        [c.key, ...(c.aliases || [])]
+          .filter((key, index) => index === 0 || !!key)
+          .map((key, index) => ({
+            label: c.label,
+            enabled: !c.needs || !!ctx[c.needs],
+            visible: index === 0,
+            acceleratorWorksWhenHidden: true,
+            accelerator: !c.scope
+              ? key
+                  ?.replace("Mod", "CommandOrControl")
+                  .replace("ArrowLeft", "Left")
+                  .replace("ArrowRight", "Right")
+                  .replace("ArrowUp", "Up")
+                  .replace("ArrowDown", "Down")
+                  .replace("Minus", "-")
+              : undefined,
+            click: () => command(c.id),
+          })),
+      ),
   }));
   template[1].submenu.unshift(
     { role: "undo" },

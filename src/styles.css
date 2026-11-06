@@ -526,7 +526,7 @@ footer button {
 }
 .popup {
   position: fixed;
-  z-index: 50;
+  z-index: 2000;
   width: 275px;
   max-height: 350px;
   overflow: auto;
@@ -867,4 +867,17 @@ mark {
 .search-result.active {
   background: var(--selected);
   border-radius: 3px;
+}
+
+.document-info {
+  gap: 6px;
+}
+.document-info > span {
+  flex: 1;
+  min-width: 0;
+}
+.modal label > select {
+  display: block;
+  width: 100%;
+  margin: 7px 0 14px;
 }

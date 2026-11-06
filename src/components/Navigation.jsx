@@ -7,6 +7,13 @@ import {
   ChevronRight,
 } from "lucide-react";
 export function navigationKey(event, vim) {
+  if (
+    event.metaKey ||
+    event.ctrlKey ||
+    event.altKey ||
+    (event.shiftKey && !(vim && event.key === "G"))
+  )
+    return;
   if (event.target.matches("input,textarea,select,[contenteditable=true]"))
     return;
   const container = event.currentTarget;

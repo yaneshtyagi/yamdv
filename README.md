@@ -2,6 +2,8 @@
 
 **Yet Another MarkDown Viewer** — a compact, local-first Markdown reading desk built with React and Electron. Version **0.0.1**.
 
+For the complete feature guide, see [HELP.md](HELP.md), also available inside the app through **Read Full Help**.
+
 ## Run
 
 Use Node.js 24 LTS or a newer supported Node.js release and npm.
@@ -30,6 +32,8 @@ The two toolbar buttons open Markdown files or a folder. Supported extensions: `
 
 Opening a file replaces the active tab. **New Tab** creates an empty tab, and the next file opens there. To keep the current document, use **Open in New Tab** from a file's action menu, modified-click (Cmd/Ctrl-click or Shift-click), or middle-click. Selecting multiple files in one picker uses the active tab for the first file and creates tabs for the rest. Opening a folder opens its first Markdown file and lists the rest in the sidebar.
 
+Each tab also has an uncapped back/forward trail. The arrow buttons or Cmd/Ctrl+[ and ] restore saved text, reading position, and zoom. A different file opened after going back clears the forward branch; refreshing the same file adds no duplicate step. Closed tabs retain their entire trails while available in the 20-tab reopen stack. Back/forward uses retained text; reopen a file to refresh from disk.
+
 Tabs retain their content, scroll position, and document zoom while switching. Close, close others, reopen closed, and next/previous tab commands are available. Switching tabs does not add history entries. Open tabs and closed-tab stacks are window-local and last for the current session.
 
 Electron supports **New Window** with independent tabs, folder, workspace selection, search, scroll, and zoom. A second launch for the same application profile opens another window in the existing process, keeping one authoritative library writer. Browser **New Window** requests another browser context; the browser decides whether to show a tab or window.
@@ -52,9 +56,10 @@ A workspace is a virtual hierarchy of references to documents; importing or orga
 
 1. Choose **Create Workspace** in the command palette, application menu, or Workspaces sidebar.
 2. Select a workspace by clicking its name; its selected row is highlighted.
-3. Use **Add Files to Workspace** or **Add Folder to Workspace**. Folder import recursively discovers Markdown files and creates a corresponding virtual hierarchy. It is a one-time reference import, not a live directory subscription.
-4. Use a workspace's actions menu to create nested workspaces, rename, add references, check availability, clean, or remove the workspace.
-5. Use a file's actions menu to retry/grant access, relink its reference, or **Remove from Workspace**. These actions also appear in the command palette/native Workspace menu after focusing a workspace file.
+3. Use the active document’s **Add Current File to Workspace** button/command to choose any workspace or nested workspace, or create a new one, without picking the file again.
+4. Use **Add Files to Workspace** or **Add Folder to Workspace**. Folder import recursively discovers Markdown files and creates a corresponding virtual hierarchy. It is a one-time reference import, not a live directory subscription.
+5. Use a workspace's actions menu to create nested workspaces, rename, add references, check availability, clean, or remove the workspace.
+6. Use a file's actions menu to retry/grant access, relink its reference, or **Remove from Workspace**. These actions also appear in the command palette/native Workspace menu after focusing a workspace file.
 
 The same file is deduplicated across a top-level workspace and its descendants, but can appear in another top-level workspace. Stable node IDs keep nested references addressable across windows. Relinking to a file already in that workspace is rejected.
 
@@ -100,28 +105,32 @@ Markdown HTML is disabled; unsafe URL schemes are rejected. External HTTP(S) lin
 
 ## Commands and keyboard
 
-Electron has File, Edit, View, Navigate, Workspace, and Help menus (plus the platform application menu). The browser has an application menu. Both have a searchable **Command Palette**. All are driven by `shared/commands.json`, including enabled states and shortcuts. Contextual reference commands use the focused workspace file; diagram commands use the focused/first diagram.
+Electron has File, Edit, View, Navigate, Workspace, and Help menus (plus the platform application menu). The browser has an application menu. Both have a searchable **Command Palette**, which immediately focuses its search field. Cmd/Ctrl+Shift+M opens the in-window application menu, including above full-screen diagrams. All are driven by `shared/commands.json`, including enabled states and shortcuts. Contextual reference commands use the focused workspace file; diagram commands use the focused/first diagram.
 
-| Action                                              | macOS                     | Windows/Linux             |
-| --------------------------------------------------- | ------------------------- | ------------------------- |
-| Open Markdown Files                                 | Cmd+O                     | Ctrl+O                    |
-| Open Folder                                         | Cmd+Shift+O               | Ctrl+Shift+O              |
-| New / Close Tab                                     | Cmd+T / Cmd+W             | Ctrl+T / Ctrl+W           |
-| Reopen Closed Tab                                   | Cmd+Shift+T               | Ctrl+Shift+T              |
-| New Window                                          | Cmd+Shift+N               | Ctrl+Shift+N              |
-| Next / Previous Tab                                 | Ctrl+Tab / Ctrl+Shift+Tab | Ctrl+Tab / Ctrl+Shift+Tab |
-| Find Active / Search All Tabs                       | Cmd+F / Cmd+Shift+F       | Ctrl+F / Ctrl+Shift+F     |
-| Next / Previous Match                               | F3 / Shift+F3             | F3 / Shift+F3             |
-| Document Zoom In / Out / Reset                      | Cmd+Plus / Minus / 0      | Ctrl+Plus / Minus / 0     |
-| Toggle Sidebar                                      | Cmd+B                     | Ctrl+B                    |
-| Folder / Favorites / History / Outline / Workspaces | Cmd+1 through Cmd+5       | Ctrl+1 through Ctrl+5     |
-| Toggle Favorite                                     | Cmd+D                     | Ctrl+D                    |
-| Command Palette                                     | Cmd+Shift+P               | Ctrl+Shift+P              |
-| Shortcut Help                                       | F1                        | F1                        |
+| Action                                              | macOS                                              | Windows/Linux                                    |
+| --------------------------------------------------- | -------------------------------------------------- | ------------------------------------------------ |
+| Open Markdown Files                                 | Cmd+O                                              | Ctrl+O                                           |
+| Open Folder                                         | Cmd+Shift+O                                        | Ctrl+Shift+O                                     |
+| New / Close Tab                                     | Cmd+T / Cmd+W                                      | Ctrl+T / Ctrl+W                                  |
+| Reopen Closed Tab                                   | Cmd+Shift+T                                        | Ctrl+Shift+T                                     |
+| New Window                                          | Cmd+Shift+N                                        | Ctrl+Shift+N                                     |
+| Next / Previous Tab                                 | Ctrl+Tab / Ctrl+Shift+Tab; Cmd+Option+Right / Left | Ctrl+Tab / Ctrl+Shift+Tab; Ctrl+Alt+Right / Left |
+| Back / Forward within a tab                         | Cmd+[ / Cmd+]                                      | Ctrl+[ / Ctrl+]                                  |
+| Focus Active Document                               | Cmd+Shift+E                                        | Ctrl+Shift+E                                     |
+| Scroll Document from Sidebar                        | Shift+Up / Down                                    | Shift+Up / Down                                  |
+| In-window Application Menu                          | Cmd+Shift+M                                        | Ctrl+Shift+M                                     |
+| Find Active / Search All Tabs                       | Cmd+F / Cmd+Shift+F                                | Ctrl+F / Ctrl+Shift+F                            |
+| Next / Previous Match                               | F3 / Shift+F3                                      | F3 / Shift+F3                                    |
+| Document Zoom In / Out / Reset                      | Cmd+Plus / Minus / 0                               | Ctrl+Plus / Minus / 0                            |
+| Toggle Sidebar                                      | Cmd+B                                              | Ctrl+B                                           |
+| Folder / Favorites / History / Outline / Workspaces | Cmd+1 through Cmd+5                                | Ctrl+1 through Ctrl+5                            |
+| Toggle Favorite                                     | Cmd+D                                              | Ctrl+D                                           |
+| Command Palette                                     | Cmd+Shift+P                                        | Ctrl+Shift+P                                     |
+| Shortcut Help                                       | F1                                                 | F1                                               |
 
 Browsers reserve new/close/reopen tab and new-window shortcuts; YAMDV deliberately leaves those to the browser. Use the + button, tab close buttons, menus, or command palette instead. Browser/OS policy may reserve additional combinations. Menus and the palette provide keyboard-accessible alternatives.
 
-Lists and outlines support Up/Down, Home/End, and Enter. Trees also support Left/Right to collapse/expand. Tab strips use Left/Right and Home/End. Menus support arrow navigation and Escape; dialogs trap focus and restore it when dismissed. Actions have visible focus indicators.
+Lists and outlines support Up/Down, Home/End, and Enter/Space on file buttons. Shift+Up/Down scrolls the active file without moving sidebar focus. Cmd/Ctrl+Shift+E focuses the reader for normal scrolling keys. Trees also support Left/Right to collapse/expand. Tab strips use Left/Right and Home/End. Menus support arrow navigation and Escape; dialogs trap focus and restore it when dismissed. Actions have visible focus indicators.
 
 Optional **Vim Navigation** adds j/k, h/l, gg/G to sidebar navigation. It is a small, discoverable navigation layer, not a full editor mode. These bindings never intercept text inputs, selects, or editable controls. Diagram full-screen shortcuts take precedence over document zoom; Escape leaves the transient diagram/menu/dialog/search state.
 
@@ -131,6 +140,8 @@ Optional **Vim Navigation** adds j/k, h/l, gg/G to sidebar navigation. It is a s
 npm test                 # model, migrations, persistence, outline, search, permissions, commands
 npm run test:ui          # production build + browser integration suite (Chrome)
 npm run test:smoke       # production build + native Electron integration suite
+npm run test:reading     # browser keyboard/reading workflow
+npm run test:reading:desktop # Electron keyboard/reading workflow
 npm run package          # desktop packaging
 npm run format           # format maintained source and tests
 npm run assets           # regenerate derivatives from logo/logo.png and GitHub CSS

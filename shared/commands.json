@@ -186,14 +186,16 @@
     "label": "Next Tab",
     "group": "Navigate",
     "key": "Ctrl+Tab",
-    "needs": "tab"
+    "needs": "tab",
+    "aliases": ["Mod+Alt+ArrowRight"]
   },
   {
     "id": "previous-tab",
     "label": "Previous Tab",
     "group": "Navigate",
     "key": "Ctrl+Shift+Tab",
-    "needs": "tab"
+    "needs": "tab",
+    "aliases": ["Mod+Alt+ArrowLeft"]
   },
   {
     "id": "favorite",
@@ -319,5 +321,59 @@
     "label": "Toggle Diagram Full Screen",
     "group": "View",
     "needs": "diagram"
+  },
+  {
+    "id": "scroll-document-up",
+    "label": "Scroll Active Document Up",
+    "group": "Navigate",
+    "key": "Shift+ArrowUp",
+    "scope": "sidebar",
+    "needs": "document"
+  },
+  {
+    "id": "scroll-document-down",
+    "label": "Scroll Active Document Down",
+    "group": "Navigate",
+    "key": "Shift+ArrowDown",
+    "scope": "sidebar",
+    "needs": "document"
+  },
+  {
+    "id": "focus-document",
+    "label": "Focus Active Document",
+    "group": "Navigate",
+    "key": "Mod+Shift+E",
+    "needs": "document"
+  },
+  {
+    "id": "go-back",
+    "label": "Go Back",
+    "group": "Navigate",
+    "key": "Mod+[",
+    "needs": "back"
+  },
+  {
+    "id": "go-forward",
+    "label": "Go Forward",
+    "group": "Navigate",
+    "key": "Mod+]",
+    "needs": "forward"
+  },
+  {
+    "id": "application-menu",
+    "label": "Application Menu",
+    "group": "Help",
+    "key": "Mod+Shift+M"
+  },
+  {
+    "id": "workspace-add-current",
+    "label": "Add Current File to Workspace",
+    "group": "Workspace",
+    "needs": "document"
+  },
+  {
+    "id": "read-help",
+    "label": "Read Full Help",
+    "group": "Help"
   }
 ]

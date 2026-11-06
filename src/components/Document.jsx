@@ -14,13 +14,17 @@ import { metadata } from "../markdown";
 import Diagram from "./Diagram";
 import { resolveRelative } from "../library";
 import { resolveImage } from "../services/files";
-export default function Document({ tab, theme, onLink, onScroll }) {
-  const root = useRef();
+export default function Document({ tab, theme, onLink, onScroll, readerRef }) {
+  const fallbackRoot = useRef();
+  const root = readerRef || fallbackRoot;
   useEffect(() => {
     const el = root.current;
     if (!el) return;
     el.scrollTop = tab.scroll || 0;
-  }, [tab.id]);
+    el.querySelectorAll(".search-hit").forEach((node) =>
+      node.classList.remove("search-hit"),
+    );
+  }, [tab.id, tab.viewId]);
   useEffect(() => {
     if (!tab.target || !root.current) return;
     const timer = setTimeout(() => {
@@ -59,6 +63,10 @@ export default function Document({ tab, theme, onLink, onScroll }) {
     <div
       ref={root}
       className="document-scroll"
+      tabIndex={0}
+      role="region"
+      aria-label="Markdown document"
+      data-view-id={tab.viewId}
       onScroll={(e) => onScroll(e.currentTarget.scrollTop)}
     >
       <ReaderContext.Provider value={{ file: tab.file, theme, onLink }}>

@@ -152,6 +152,18 @@ try {
   await page.getByRole("button", { name: "Full Screen", exact: true }).click();
   const diagram = page.getByRole("dialog", { name: "Mermaid diagram" });
   await expect(diagram).toBeVisible();
+  await page.keyboard.press("Meta+Shift+m");
+  const fullMenu = page.getByRole("menu", { name: "Actions", exact: true });
+  await expect(fullMenu).toBeVisible();
+  expect(
+    await fullMenu.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return el.contains(document.elementFromPoint(r.left + 15, r.top + 15));
+    }),
+  ).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(fullMenu).toHaveCount(0);
+
   await diagram.getByRole("button", { name: "Zoom diagram in" }).click();
   await expect(diagram.locator("output")).toHaveText("110%");
   await page.keyboard.press("Meta+=");
@@ -167,7 +179,7 @@ try {
   await expect(diagram).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Reset Document Zoom" }),
-  ).toHaveText("100%");
+  ).toHaveText("110%");
   // Replacement and explicit new-tab behavior.
   await pick([beta]);
   await expect(page.getByRole("tab")).toHaveCount(2);

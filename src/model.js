@@ -6,6 +6,9 @@ export const emptyTab = () => ({
   zoom: 1,
   scroll: 0,
   target: null,
+  viewId: uid(),
+  back: [],
+  forward: [],
 });
 export const initialTabs = () => {
   const tab = emptyTab();
@@ -25,19 +28,52 @@ export function tabsReducer(state, action) {
       const target = action.newTab
         ? null
         : state.tabs.find((t) => t.id === (action.tabId || state.activeId));
-      const t = {
-        ...emptyTab(),
-        ...(!action.newTab && target ? { id: target.id } : {}),
-        file: action.file,
-        content: action.content,
-        target: action.target || null,
-      };
+      const sameFile = target?.file?.id === action.file.id;
+      const t = sameFile
+        ? {
+            ...target,
+            file: action.file,
+            content: action.content,
+            target: action.target || null,
+          }
+        : {
+            ...emptyTab(),
+            ...(!action.newTab && target ? { id: target.id } : {}),
+            file: action.file,
+            content: action.content,
+            target: action.target || null,
+            back: target?.file
+              ? [...(target.back || []), visitSnapshot(target, action.scroll)]
+              : [],
+          };
       return {
         ...state,
         tabs: target
           ? state.tabs.map((x) => (x.id === target.id ? t : x))
           : [...state.tabs, t],
         activeId: t.id,
+      };
+    }
+    case "navigate": {
+      const id = action.id || state.activeId;
+      const tab = state.tabs.find((t) => t.id === id);
+      const direction = action.direction === "back" ? "back" : "forward",
+        opposite = direction === "back" ? "forward" : "back";
+      const destination = tab?.[direction]?.at(-1);
+      if (!destination) return state;
+      const updated = {
+        ...tab,
+        ...destination,
+        target: null,
+        [direction]: tab[direction].slice(0, -1),
+        [opposite]: [
+          ...(tab[opposite] || []),
+          visitSnapshot(tab, action.scroll),
+        ],
+      };
+      return {
+        ...state,
+        tabs: state.tabs.map((t) => (t.id === id ? updated : t)),
       };
     }
     case "patch":
@@ -101,4 +137,15 @@ export function referenceNodes(files) {
     parent.push({ id: uid(), type: "file", file });
   }
   return root;
+}
+
+function visitSnapshot(tab, scroll) {
+  return {
+    file: tab.file,
+    content: tab.content,
+    zoom: tab.zoom,
+    scroll: scroll ?? tab.scroll,
+    target: null,
+    viewId: tab.viewId,
+  };
 }

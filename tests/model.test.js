@@ -174,3 +174,86 @@ describe("workspace identity boundaries", () => {
     );
   });
 });
+
+describe("per-tab visit trails", () => {
+  it("restores retained text, live scroll and zoom in both directions without mixing tabs", () => {
+    let s = initialTabs();
+    s = tabsReducer(s, {
+      type: "open",
+      file: file("a"),
+      content: "Original A",
+    });
+    const tabId = s.activeId,
+      aView = s.tabs[0].viewId;
+    s = tabsReducer(s, {
+      type: "patch",
+      patch: { zoom: 1.4, scroll: 100, target: { heading: "a" } },
+    });
+    s = tabsReducer(s, {
+      type: "open",
+      file: file("b"),
+      content: "Original B",
+      scroll: 475,
+    });
+    expect(s.tabs[0].back[0]).toMatchObject({
+      content: "Original A",
+      zoom: 1.4,
+      scroll: 475,
+    });
+    s = tabsReducer(s, { type: "patch", patch: { zoom: 1.2 } });
+    s = tabsReducer(s, { type: "navigate", direction: "back", scroll: 280 });
+    expect(s.tabs[0]).toMatchObject({
+      file: file("a"),
+      content: "Original A",
+      zoom: 1.4,
+      scroll: 475,
+      viewId: aView,
+      target: null,
+    });
+    s = tabsReducer(s, { type: "navigate", direction: "forward", scroll: 620 });
+    expect(s.tabs[0]).toMatchObject({
+      file: file("b"),
+      zoom: 1.2,
+      scroll: 280,
+    });
+    expect(s.tabs[0].back[0].scroll).toBe(620);
+    s = tabsReducer(s, { type: "new" });
+    s = tabsReducer(s, { type: "open", file: file("c"), content: "C" });
+    expect(s.tabs[1].back).toEqual([]);
+    s = tabsReducer(s, { type: "activate", id: tabId });
+    s = tabsReducer(s, { type: "close" });
+    s = tabsReducer(s, { type: "reopen" });
+    expect(s.tabs.at(-1).back[0].file.id).toBe("a");
+  });
+  it("keeps arbitrarily long trails through close/reopen and discards forward visits only on a new branch", () => {
+    let s = initialTabs();
+    for (let i = 0; i < 512; i++)
+      s = tabsReducer(s, {
+        type: "open",
+        file: file(String(i)),
+        content: String(i),
+      });
+    expect(s.tabs[0].back).toHaveLength(511);
+    s = tabsReducer(s, { type: "close" });
+    s = tabsReducer(s, { type: "reopen" });
+    for (let i = 0; i < 511; i++)
+      s = tabsReducer(s, { type: "navigate", direction: "back" });
+    expect(s.tabs[0].file.id).toBe("0");
+    expect(s.tabs[0].forward).toHaveLength(511);
+    s = tabsReducer(s, {
+      type: "open",
+      file: file("0"),
+      content: "Refreshed zero",
+    });
+    expect(s.tabs[0].forward).toHaveLength(511);
+    expect(s.tabs[0].back).toHaveLength(0);
+    s = tabsReducer(s, {
+      type: "open",
+      file: file("new-branch"),
+      content: "New",
+    });
+    expect(s.tabs[0].forward).toHaveLength(0);
+    expect(s.tabs[0].back[0].content).toBe("Refreshed zero");
+    expect(tabsReducer(s, { type: "navigate", direction: "forward" })).toBe(s);
+  });
+});
