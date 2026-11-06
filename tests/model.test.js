@@ -129,3 +129,48 @@ describe("shared library operations", () => {
     expect(s.workspaces).toEqual([]);
   });
 });
+
+describe("workspace identity boundaries", () => {
+  it("deduplicates across nested folders within one root while allowing other roots", () => {
+    let s = applyOperation(null, {
+      type: "workspace-create",
+      id: "root",
+      name: "Root",
+    });
+    s = applyOperation(s, {
+      type: "workspace-create",
+      id: "child",
+      name: "Child",
+      parent: "root",
+    });
+    s = applyOperation(s, {
+      type: "workspace-create",
+      id: "other",
+      name: "Other",
+    });
+    s = applyOperation(s, {
+      type: "workspace-add",
+      id: "root",
+      nodes: referenceNodes([file("same")]),
+    });
+    s = applyOperation(s, {
+      type: "workspace-add",
+      id: "child",
+      nodes: referenceNodes([file("same")]),
+    });
+    s = applyOperation(s, {
+      type: "workspace-add",
+      id: "other",
+      nodes: referenceNodes([file("same")]),
+    });
+    expect(collectFiles(findNode(s.workspaces, "root").children)).toHaveLength(
+      1,
+    );
+    expect(collectFiles(findNode(s.workspaces, "child").children)).toHaveLength(
+      0,
+    );
+    expect(collectFiles(findNode(s.workspaces, "other").children)).toHaveLength(
+      1,
+    );
+  });
+});

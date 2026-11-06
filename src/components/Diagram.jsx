@@ -9,6 +9,7 @@ export default function Diagram({ source, theme }) {
     [full, setFull] = useState(false),
     [zoom, setZoom] = useState(1),
     [size, setSize] = useState({ width: 800, height: 400 });
+  const diagramId = useRef(crypto.randomUUID());
   const viewport = useRef(),
     origin = useRef(),
     closing = useRef();
@@ -99,15 +100,25 @@ export default function Diagram({ source, theme }) {
     } else origin.current?.focus();
   }, [full]);
   useEffect(() => {
-    if (!full) return;
     const listener = (e) => {
-      if (e.detail === "zoom-in") adjust(0.1);
-      else if (e.detail === "zoom-out") adjust(-0.1);
-      else if (e.detail === "zoom-reset") setZoom(1);
+      const selected =
+        document.querySelector("[data-diagram-fullscreen]") ||
+        document.querySelector("[data-diagram-active]") ||
+        document.querySelector("[data-diagram-id]");
+      if (selected?.dataset.diagramId !== diagramId.current) return;
+      const command = e.detail;
+      if (command === "zoom-in" || command === "diagram-in") adjust(0.1);
+      else if (command === "zoom-out" || command === "diagram-out")
+        adjust(-0.1);
+      else if (command === "zoom-reset" || command === "diagram-reset")
+        setZoom(1);
+      else if (command === "diagram-fit") fit();
+      else if (command === "diagram-fullscreen") setFull((f) => !f);
     };
     window.addEventListener("diagram-command", listener);
     return () => window.removeEventListener("diagram-command", listener);
-  }, [full]);
+  }, [full, size]);
+
   function key(e) {
     if (e.key === "Escape" && full) {
       e.preventDefault();
@@ -149,6 +160,13 @@ export default function Diagram({ source, theme }) {
     <section
       className={"diagram " + (full ? "diagram-fullscreen" : "")}
       data-diagram-fullscreen={full || undefined}
+      data-diagram-id={diagramId.current}
+      onFocus={(e) => {
+        document
+          .querySelectorAll("[data-diagram-active]")
+          .forEach((n) => delete n.dataset.diagramActive);
+        e.currentTarget.dataset.diagramActive = "true";
+      }}
       role={full ? "dialog" : undefined}
       aria-modal={full || undefined}
       aria-label="Mermaid diagram"

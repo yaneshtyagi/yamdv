@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  createContext,
+  useContext,
+} from "react";
 import Markdown, { defaultUrlTransform } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
@@ -7,7 +13,7 @@ import "katex/dist/katex.min.css";
 import { metadata } from "../markdown";
 import Diagram from "./Diagram";
 import { resolveRelative } from "../library";
-import { imageURL } from "../services/files";
+import { resolveImage } from "../services/files";
 export default function Document({ tab, theme, onLink, onScroll }) {
   const root = useRef();
   useEffect(() => {
@@ -48,85 +54,105 @@ export default function Document({ tab, theme, onLink, onScroll }) {
     }, 80);
     return () => clearTimeout(timer);
   }, [tab.target, tab.content]);
-  const components = useMemo(
-    () => ({
-      a: ({ href, children }) => (
-        <a
-          href={href}
-          onClick={(e) => {
-            e.preventDefault();
-            onLink(href, e.metaKey || e.ctrlKey || e.shiftKey);
-          }}
-        >
-          {children}
-        </a>
-      ),
-      img: ({ src, alt }) => {
-        let url = src;
-        try {
-          if (src && !/^(https?:|data:|blob:)/i.test(src) && tab.file)
-            url = imageURL(
-              tab.file,
-              resolveRelative(tab.file.path || tab.file.relative, src),
-            );
-        } catch {
-          url = null;
-        }
-        return url ? (
-          <img src={url} alt={alt} loading="lazy" />
-        ) : (
-          <span className="missing-image">Image unavailable: {alt || src}</span>
-        );
-      },
-      pre: ({ children, ...props }) => {
-        const child = React.Children.toArray(children)[0];
-        if (
-          React.isValidElement(child) &&
-          child.props.className === "language-mermaid"
-        )
-          return (
-            <Diagram
-              source={String(child.props.children).replace(/\n$/, "")}
-              theme={theme}
-            />
-          );
-        return <pre {...props}>{children}</pre>;
-      },
-    }),
-    [tab.file, theme, onLink],
-  );
+
   return (
     <div
       ref={root}
       className="document-scroll"
       onScroll={(e) => onScroll(e.currentTarget.scrollTop)}
     >
-      <article className="markdown-body" style={{ zoom: tab.zoom }}>
-        <Markdown
-          skipHtml
-          remarkPlugins={[remarkGfm, remarkMath, metadata]}
-          rehypePlugins={[
-            [
-              rehypeKatex,
-              {
-                throwOnError: false,
-                trust: false,
-                strict: "warn",
-                maxExpand: 1000,
-                maxSize: 20,
-              },
-            ],
-          ]}
-          urlTransform={(url) =>
-            /^(?:javascript|vbscript|file):/i.test(url)
-              ? ""
-              : defaultUrlTransform(url)
-          }
-          components={components}
-        >
-          {tab.content}
-        </Markdown>
-      </article>
+      <ReaderContext.Provider value={{ file: tab.file, theme, onLink }}>
+        <article className="markdown-body" style={{ zoom: tab.zoom }}>
+          <Markdown
+            skipHtml
+            remarkPlugins={[remarkGfm, remarkMath, metadata]}
+            rehypePlugins={[
+              [
+                rehypeKatex,
+                {
+                  throwOnError: false,
+                  trust: false,
+                  strict: "warn",
+                  maxExpand: 1000,
+                  maxSize: 20,
+                },
+              ],
+            ]}
+            urlTransform={(url) =>
+              /^(?:javascript|vbscript|file):/i.test(url)
+                ? ""
+                : defaultUrlTransform(url)
+            }
+            components={components}
+          >
+            {tab.content}
+          </Markdown>
+        </article>
+      </ReaderContext.Provider>
     </div>
   );
 }
+
+function LocalImage({ file, src, alt }) {
+  const [url, setURL] = useState(null);
+  useEffect(() => {
+    let canceled = false;
+    setURL(null);
+    if (!src) return;
+    if (/^(https?:|blob:)/i.test(src)) {
+      setURL(src);
+      return;
+    }
+    if (file) {
+      resolveImage(file, resolveRelative(file.path || file.relative, src))
+        .then((value) => {
+          if (!canceled) setURL(value);
+        })
+        .catch(() => {});
+    }
+    return () => {
+      canceled = true;
+    };
+  }, [file?.id, file?.rootId, file?.path, src]);
+  return url ? (
+    <img src={url} alt={alt} loading="lazy" />
+  ) : (
+    <span className="missing-image">Image unavailable: {alt || src}</span>
+  );
+}
+
+const ReaderContext = createContext(null);
+function MarkdownLink({ href, children }) {
+  const { onLink } = useContext(ReaderContext);
+  return (
+    <a
+      href={href}
+      onClick={(e) => {
+        e.preventDefault();
+        onLink(href, e.metaKey || e.ctrlKey || e.shiftKey);
+      }}
+    >
+      {children}
+    </a>
+  );
+}
+function MarkdownImage({ src, alt }) {
+  const { file } = useContext(ReaderContext);
+  return <LocalImage file={file} src={src} alt={alt} />;
+}
+function MarkdownPre({ children, node, ...props }) {
+  const { theme } = useContext(ReaderContext);
+  const child = React.Children.toArray(children)[0];
+  if (
+    React.isValidElement(child) &&
+    child.props.className === "language-mermaid"
+  )
+    return (
+      <Diagram
+        source={String(child.props.children).replace(/\n$/, "")}
+        theme={theme}
+      />
+    );
+  return <pre {...props}>{children}</pre>;
+}
+const components = { a: MarkdownLink, img: MarkdownImage, pre: MarkdownPre };

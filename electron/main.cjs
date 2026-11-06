@@ -176,6 +176,16 @@ function createWindow() {
   else win.loadFile(path.join(__dirname, "../dist/index.html"));
   return win;
 }
+const profileArgument = process.argv.find((arg) =>
+  arg.startsWith("--user-data-dir="),
+);
+if (profileArgument)
+  app.setPath(
+    "userData",
+    path.resolve(profileArgument.slice("--user-data-dir=".length)),
+  );
+if (!app.requestSingleInstanceLock()) app.quit();
+else app.on("second-instance", () => app.whenReady().then(createWindow));
 app.whenReady().then(async () => {
   ({ normalize, applyOperation } = await import("../shared/library.mjs"));
   try {
@@ -206,7 +216,10 @@ app.whenReady().then(async () => {
   protocol.handle("yamdv-asset", async (request) => {
     try {
       const p = await fs.realpath(
-        decodeURIComponent(new URL(request.url).pathname),
+        decodeURIComponent(new URL(request.url).pathname).replace(
+          process.platform === "win32" ? /^\/(?=[A-Za-z]:)/ : /$^/,
+          "",
+        ),
       );
       if (
         ![...assets].some((root) => p.startsWith(root + path.sep)) ||

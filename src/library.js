@@ -13,7 +13,7 @@ export function readSaved(key, fallback) {
   }
 }
 export function resolveRelative(from, target) {
-  const parts = from.split("/");
+  const parts = from.replaceAll("\\", "/").split("/");
   parts.pop();
   for (const part of decodeURIComponent(target).split("/")) {
     if (part === "..") parts.pop();

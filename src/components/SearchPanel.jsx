@@ -6,6 +6,7 @@ export default function SearchPanel({
   sources,
   onResult,
   onResults,
+  activeResult,
   onClose,
   vim,
 }) {
@@ -22,6 +23,8 @@ export default function SearchPanel({
   useEffect(() => {
     const controller = new AbortController();
     setError("");
+    setData({ groups: [], issues: [] });
+    onResults([]);
     setBusy(!!query);
     const timer = setTimeout(async () => {
       try {
@@ -122,7 +125,16 @@ export default function SearchPanel({
               {group.file.name} <small>{group.matches.length}</small>
             </summary>
             {group.matches.map((match) => (
-              <div className="search-result" key={match.offset}>
+              <div
+                className={
+                  "search-result " +
+                  (activeResult?.file.id === group.file.id &&
+                  activeResult?.match.offset === match.offset
+                    ? "active"
+                    : "")
+                }
+                key={match.offset}
+              >
                 <button
                   onClick={() => onResult(group.file, match, false)}
                   title={group.file.relative}

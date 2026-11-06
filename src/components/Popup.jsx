@@ -3,7 +3,9 @@ export default function Popup({ children, x, y, onClose, label = "Actions" }) {
   const ref = useRef();
   useEffect(() => {
     const before = document.activeElement;
-    ref.current.querySelector("button:not(:disabled)")?.focus();
+    [...ref.current.querySelectorAll("button:not(:disabled),summary")]
+      .find((el) => el.getClientRects().length)
+      ?.focus();
     const outside = (e) => {
       if (!ref.current?.contains(e.target)) onClose();
     };
@@ -25,9 +27,28 @@ export default function Popup({ children, x, y, onClose, label = "Actions" }) {
       }}
       onKeyDown={(e) => {
         const items = [
-            ...e.currentTarget.querySelectorAll("button:not(:disabled)"),
-          ],
+            ...e.currentTarget.querySelectorAll(
+              "button:not(:disabled),summary",
+            ),
+          ].filter((el) => el.getClientRects().length),
           index = items.indexOf(document.activeElement);
+        if (["ArrowRight", "ArrowLeft"].includes(e.key)) {
+          const details = document.activeElement?.closest("details");
+          if (details) {
+            e.preventDefault();
+            details.open = e.key === "ArrowRight";
+            details.querySelector("summary")?.focus();
+          }
+        }
+        if (e.key === "Tab") {
+          if (!e.shiftKey && document.activeElement === items.at(-1)) {
+            e.preventDefault();
+            items[0]?.focus();
+          } else if (e.shiftKey && document.activeElement === items[0]) {
+            e.preventDefault();
+            items.at(-1)?.focus();
+          }
+        }
         if (e.key === "Escape") {
           e.preventDefault();
           e.stopPropagation();

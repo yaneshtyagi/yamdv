@@ -57,7 +57,7 @@ import {
   matchesShortcut,
   shortcutLabel,
 } from "./commands";
-import { outlineFor } from "./markdown";
+import { analyzeMarkdown } from "./markdown";
 import { resolveRelative } from "./library";
 import {
   FileTree,
@@ -68,6 +68,7 @@ import {
 import Modal from "./components/Modal";
 import Popup from "./components/Popup";
 import SearchPanel from "./components/SearchPanel";
+import { scopeFiles } from "./services/search";
 const Document = lazy(() => import("./components/Document"));
 const sections = [
   ["folder", FolderOpen, "Folder"],
@@ -87,6 +88,7 @@ export default function App() {
     [sidebar, setSidebar] = useState(true),
     [selectedWorkspace, setSelectedWorkspace] = useState(null),
     [statuses, setStatuses] = useState({}),
+    [reference, setReference] = useState(null),
     [resolvedTheme, setResolvedTheme] = useState("light"),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
@@ -191,7 +193,10 @@ export default function App() {
     try {
       const content = contentOverride ?? (await readFile(file));
       if (requests.current.get(key) !== token) return;
-      const saved = { ...file, content: file.snapshot ? content : undefined };
+      const saved = {
+        ...file,
+        content: file.snapshot && !file.handle ? content : undefined,
+      };
       delete saved._content;
       dispatch({
         type: "open",
@@ -242,7 +247,7 @@ export default function App() {
     try {
       const existing = library.favorites.some((f) => f.id === file.id);
       const saved = { ...file };
-      if (file.snapshot && !existing)
+      if (file.snapshot && !file.handle && !existing)
         saved.content =
           active?.file?.id === file.id ? active.content : await readFile(file);
       await change({ type: "favorite", file: saved, value: !existing });
@@ -295,8 +300,21 @@ export default function App() {
           ? `Remove ${missing.length} confirmed missing file reference(s) from “${workspace.name}” recursively? Source files are never deleted. Inaccessible and permission-required references will be kept.`
           : "No confirmed missing references found. References requiring permission are kept.",
         confirm: missing.length ? "Remove References" : null,
-        onConfirm: () =>
-          change({ type: "workspace-clean", id: workspace.id, missing }),
+        onConfirm: async () => {
+          const candidates = workspaceFiles.filter((f) =>
+            missing.includes(f.id),
+          );
+          const rechecked = await boundedMap(candidates, availability, {
+            limit: 4,
+          });
+          await change({
+            type: "workspace-clean",
+            id: workspace.id,
+            missing: candidates
+              .filter((f, i) => rechecked[i]?.value === "missing")
+              .map((f) => f.id),
+          });
+        },
       });
       await refreshAvailability();
     } catch (e) {
@@ -306,6 +324,10 @@ export default function App() {
     }
   }
   function resultOpen(file, match, newTab) {
+    const index = results.findIndex(
+      (r) => r.file.id === file.id && r.match.offset === match.offset,
+    );
+    if (index >= 0) setResultIndex(index);
     openDocument(
       file,
       newTab,
@@ -315,7 +337,12 @@ export default function App() {
   }
   function nextMatch(delta) {
     if (!results.length) return;
-    const index = (resultIndex + delta + results.length) % results.length;
+    const index =
+      resultIndex < 0
+        ? delta > 0
+          ? 0
+          : results.length - 1
+        : (resultIndex + delta + results.length) % results.length;
     setResultIndex(index);
     resultOpen(results[index].file, results[index].match, false);
   }
@@ -334,17 +361,53 @@ export default function App() {
         patch: { zoom: reset ? 1 : clampZoom(active.zoom + delta) },
       });
   }
+  const markdownInfo = useMemo(
+    () => analyzeMarkdown(active?.content || ""),
+    [active?.content],
+  );
   const ctx = {
+    reference:
+      section === "workspaces" &&
+      !!reference?.nodeId &&
+      !!findNode(library.workspaces, reference.nodeId),
+    diagram: markdownInfo.hasDiagram,
     tab: !!active,
     document: !!active?.file,
     closed: !!state.closed.length,
     workspace: !!workspace,
     results: !!results.length,
   };
-  async function run(id) {
+  async function executeCommand(id, targetReference = reference) {
     setPopup(null);
     const c = commands.find((c) => c.id === id);
-    if (c && !commandEnabled(c, ctx)) return;
+    if (
+      c &&
+      !commandEnabled(c, { ...ctx, reference: !!targetReference?.nodeId })
+    )
+      return;
+    if (id === "open-new-tab") return openDocument(active.file, true);
+    if (id.startsWith("diagram-")) {
+      window.dispatchEvent(new CustomEvent("diagram-command", { detail: id }));
+      return;
+    }
+    if (id === "reference-remove")
+      return change({ type: "workspace-remove", id: targetReference.nodeId });
+    if (id === "reference-relink") {
+      const list = await pickFiles();
+      if (list?.[0])
+        return change({
+          type: "workspace-relink",
+          id: targetReference.nodeId,
+          file: list[0],
+        });
+      return;
+    }
+    if (id === "reference-retry") {
+      await grant(targetReference.file);
+      await refreshAvailability();
+      return;
+    }
+
     if (id === "open-files") return openPicker("files");
     if (id === "open-folder") return openPicker("folder");
     if (id === "new-tab") {
@@ -364,6 +427,7 @@ export default function App() {
       return;
     }
     if (id === "close-others") {
+      requests.current.clear();
       dispatch({ type: "close-others" });
       return;
     }
@@ -442,6 +506,9 @@ export default function App() {
     }
     if (id === "help") setModal({ type: "help" });
   }
+  function run(...args) {
+    return executeCommand(...args).catch((e) => setError(e.message));
+  }
   runRef.current = run;
   useEffect(() => {
     const listener = (e) => {
@@ -467,7 +534,15 @@ export default function App() {
   useEffect(() => desktop?.onCommand((id) => runRef.current(id)), []);
   useEffect(() => {
     desktop?.commandState(ctx);
-  }, [ctx.tab, ctx.document, ctx.closed, ctx.workspace, ctx.results]);
+  }, [
+    ctx.tab,
+    ctx.document,
+    ctx.closed,
+    ctx.workspace,
+    ctx.results,
+    ctx.diagram,
+    ctx.reference,
+  ]);
   function onLink(href, newTab) {
     if (!href) return;
     if (/^https?:\/\//i.test(href)) {
@@ -492,7 +567,10 @@ export default function App() {
         ...library.history,
         ...library.favorites,
         ...collectFiles(library.workspaces),
-      ].find((f) => f.relative === relative || f.path === absolute);
+      ].find(
+        (f) =>
+          f.relative === relative || f.path?.replaceAll("\\", "/") === absolute,
+      );
       if (file)
         openDocument(
           file,
@@ -504,10 +582,7 @@ export default function App() {
       setError(e.message);
     }
   }
-  const outline = useMemo(
-    () => outlineFor(active?.content || ""),
-    [active?.content],
-  );
+  const outline = markdownInfo.outline;
   const displayed = (
     section === "folder"
       ? files
@@ -517,29 +592,27 @@ export default function App() {
   ).filter((f) =>
     `${f.relative} ${f.name}`.toLowerCase().includes(filter.toLowerCase()),
   );
-  // Search reads document text, not transient scroll/zoom state.
-  const tabTextKey = state.tabs
-    .map((t) => `${t.id}:${t.file?.id}:${t.content}`)
-    .join("\0");
-  const sources = useMemo(
-    () => ({
-      tabs: state.tabs,
-      active,
-      folder: files,
-      favorites: library.favorites,
-      history: library.history,
-      workspace: workspaceFiles,
-    }),
-    [
-      tabTextKey,
-      state.activeId,
-      files,
-      library.favorites,
-      library.history,
-      workspaceFiles,
-    ],
+  // Source identity ignores history reorder and transient zoom/scroll state.
+  const sourceInput = {
+    tabs: state.tabs,
+    active,
+    folder: files,
+    favorites: library.favorites,
+    history: library.history,
+    workspace: workspaceFiles,
+  };
+  const sourceKey = JSON.stringify(
+    scopeFiles(searchScope, sourceInput)
+      .map((f) => [f.id, f.path, f._content, f.content])
+      .sort((a, b) => a[0].localeCompare(b[0])),
   );
+  const sources = useMemo(() => sourceInput, [searchScope, sourceKey]);
+  const updateResults = useCallback((value) => {
+    setResults(value);
+    setResultIndex(-1);
+  }, []);
   const rowProps = {
+    onReference: setReference,
     onOpen: (f, n) => {
       saveScroll();
       openDocument(f, n);
@@ -666,7 +739,8 @@ export default function App() {
                 onScope={setSearchScope}
                 sources={sources}
                 onResult={resultOpen}
-                onResults={setResults}
+                onResults={updateResults}
+                activeResult={results[resultIndex]}
                 onClose={() => setSearchScope(null)}
               />
             ) : (
@@ -1018,50 +1092,27 @@ export default function App() {
               >
                 Toggle Favorite
               </button>
-              {popup.nodeId && (
-                <>
-                  <button
-                    role="menuitem"
-                    onClick={async () => {
-                      const f = popup.file;
-                      setPopup(null);
-                      await grant(f);
-                      await refreshAvailability();
-                    }}
-                  >
-                    Retry / Grant Access
-                  </button>
-                  <button
-                    role="menuitem"
-                    onClick={async () => {
-                      const id = popup.nodeId;
-                      setPopup(null);
-                      const list = await pickFiles();
-                      if (list?.[0])
-                        await change({
-                          type: "workspace-relink",
-                          id,
-                          file: list[0],
-                        });
-                    }}
-                  >
-                    Relink Reference…
-                  </button>
-                  <button
-                    role="menuitem"
-                    onClick={() => {
-                      change({ type: "workspace-remove", id: popup.nodeId });
-                      setPopup(null);
-                    }}
-                  >
-                    Remove from Workspace
-                  </button>
-                </>
-              )}
+              {popup.nodeId &&
+                ["reference-retry", "reference-relink", "reference-remove"].map(
+                  (id) => (
+                    <button
+                      key={id}
+                      role="menuitem"
+                      onClick={() =>
+                        run(id, { file: popup.file, nodeId: popup.nodeId })
+                      }
+                    >
+                      {commands.find((c) => c.id === id).label}
+                    </button>
+                  ),
+                )}
             </>
           ) : popup.type === "workspace" ? (
             commands
-              .filter((c) => c.group === "Workspace")
+              .filter(
+                (c) =>
+                  c.group === "Workspace" && !c.id.startsWith("reference-"),
+              )
               .map((c) => (
                 <button
                   key={c.id}

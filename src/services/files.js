@@ -1,9 +1,11 @@
-import { desktop, handleStore } from "./store";
+import { desktop, handleStore, storedHandles } from "./store";
 import { isMarkdown } from "../library";
 import { uid } from "../model";
 const sources = new Map(),
   handles = new Map(),
-  images = new Map();
+  images = new Map(),
+  imageHandles = new Map();
+let loadHandles;
 export class FileAccessError extends Error {
   constructor(message, status = "inaccessible") {
     super(message);
@@ -74,17 +76,23 @@ export async function grant(file) {
   return availability(file);
 }
 async function descriptor(handle, relative, root = "") {
+  await (loadHandles ||= storedHandles().then((entries) =>
+    entries.forEach(([id, h]) => {
+      if (!handles.has(id)) handles.set(id, h);
+    }),
+  ));
   let id;
   for (const [key, known] of handles) {
-    if (await known.isSameEntry(handle)) {
-      id = key;
-      break;
-    }
+    try {
+      if (await known.isSameEntry(handle)) {
+        id = key;
+        break;
+      }
+    } catch {}
   }
   id ||= root ? `handle:${root}/${relative}` : `handle:${uid()}`;
   handles.set(id, handle);
   await handleStore(id, handle);
-  const f = await handle.getFile();
   return {
     id,
     name: handle.name,
@@ -92,7 +100,6 @@ async function descriptor(handle, relative, root = "") {
     path: relative,
     snapshot: true,
     handle: true,
-    content: await f.text(),
   };
 }
 async function pickHandlesFolder() {
@@ -121,10 +128,7 @@ async function pickHandlesFolder() {
       else if (isMarkdown(name))
         files.push(await descriptor(h, relative, rootId));
       else if (/\.(png|jpe?g|gif|webp|svg|avif)$/i.test(name)) {
-        images.set(
-          `${rootId}/${relative}`,
-          URL.createObjectURL(await h.getFile()),
-        );
+        imageHandles.set(`${rootId}/${relative}`, h);
       }
     }
   }
@@ -204,7 +208,7 @@ export async function importFiles(list) {
         }
       }
       const relative = f.webkitRelativePath || f.name;
-      const id = `snapshot:${batch}/${relative}`;
+      const id = `snapshot:${relative}:${f.size}:${f.lastModified}`;
       sources.set(id, f);
       files.push({
         id,
@@ -212,8 +216,8 @@ export async function importFiles(list) {
         path: relative,
         relative,
         snapshot: true,
-        content: await f.text(),
         rootId: batch,
+        content: await f.text(),
       });
     } else if (/\.(png|jpe?g|gif|webp|svg|avif)$/i.test(f.name))
       images.set(
@@ -226,8 +230,8 @@ export async function importFiles(list) {
 export function imageURL(file, relative) {
   if (desktop && !file.snapshot)
     return (
-      "yamdv-asset://local" +
-      relative.split("/").map(encodeURIComponent).join("/")
+      "yamdv-asset://local/" +
+      relative.replace(/^\//, "").split("/").map(encodeURIComponent).join("/")
     );
   return images.get(`${file.rootId}/${relative}`);
 }
@@ -247,4 +251,26 @@ export async function boundedMap(items, fn, { limit = 4, signal } = {}) {
     }),
   );
   return result;
+}
+
+export async function resolveImage(file, relative) {
+  const existing = imageURL(file, relative);
+  if (existing) return existing;
+  if (!file.rootId) return null;
+  const key = `${file.rootId}/${relative}`;
+  let handle = imageHandles.get(key);
+  if (!handle) {
+    const roots = (await handleStore("roots")) || [];
+    let dir = roots.find((r) => r.id === file.rootId)?.handle;
+    if (!dir || (await dir.queryPermission({ mode: "read" })) !== "granted")
+      return null;
+    const parts = relative.split("/").filter(Boolean);
+    for (const part of parts.slice(0, -1))
+      dir = await dir.getDirectoryHandle(part);
+    handle = await dir.getFileHandle(parts.at(-1));
+    imageHandles.set(key, handle);
+  }
+  const url = URL.createObjectURL(await handle.getFile());
+  images.set(key, url);
+  return url;
 }

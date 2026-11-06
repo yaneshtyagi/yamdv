@@ -59,9 +59,21 @@
     "group": "Edit",
     "key": "Mod+Shift+F"
   },
-  { "id": "search-folder", "label": "Search Current Folder", "group": "Edit" },
-  { "id": "search-favorites", "label": "Search Favorites", "group": "Edit" },
-  { "id": "search-history", "label": "Search History", "group": "Edit" },
+  {
+    "id": "search-folder",
+    "label": "Search Current Folder",
+    "group": "Edit"
+  },
+  {
+    "id": "search-favorites",
+    "label": "Search Favorites",
+    "group": "Edit"
+  },
+  {
+    "id": "search-history",
+    "label": "Search History",
+    "group": "Edit"
+  },
   {
     "id": "search-workspace",
     "label": "Search Current Workspace",
@@ -103,12 +115,36 @@
     "key": "Mod+0",
     "needs": "document"
   },
-  { "id": "ui-in", "label": "Zoom Application UI In", "group": "View" },
-  { "id": "ui-out", "label": "Zoom Application UI Out", "group": "View" },
-  { "id": "ui-reset", "label": "Reset Application UI Zoom", "group": "View" },
-  { "id": "theme-light", "label": "Light Theme", "group": "View" },
-  { "id": "theme-dark", "label": "Dark Theme", "group": "View" },
-  { "id": "theme-system", "label": "System Theme", "group": "View" },
+  {
+    "id": "ui-in",
+    "label": "Zoom Application UI In",
+    "group": "View"
+  },
+  {
+    "id": "ui-out",
+    "label": "Zoom Application UI Out",
+    "group": "View"
+  },
+  {
+    "id": "ui-reset",
+    "label": "Reset Application UI Zoom",
+    "group": "View"
+  },
+  {
+    "id": "theme-light",
+    "label": "Light Theme",
+    "group": "View"
+  },
+  {
+    "id": "theme-dark",
+    "label": "Dark Theme",
+    "group": "View"
+  },
+  {
+    "id": "theme-system",
+    "label": "System Theme",
+    "group": "View"
+  },
   {
     "id": "toggle-sidebar",
     "label": "Toggle Sidebar",
@@ -213,7 +249,11 @@
     "group": "Workspace",
     "needs": "workspace"
   },
-  { "id": "toggle-vim", "label": "Toggle Vim Navigation", "group": "Navigate" },
+  {
+    "id": "toggle-vim",
+    "label": "Toggle Vim Navigation",
+    "group": "Navigate"
+  },
   {
     "id": "palette",
     "label": "Command Palette",
@@ -225,5 +265,59 @@
     "label": "Keyboard Shortcuts and Help",
     "group": "Help",
     "key": "F1"
+  },
+  {
+    "id": "open-new-tab",
+    "label": "Open in New Tab",
+    "group": "File",
+    "needs": "document"
+  },
+  {
+    "id": "reference-retry",
+    "label": "Retry / Grant Reference Access",
+    "group": "Workspace",
+    "needs": "reference"
+  },
+  {
+    "id": "reference-relink",
+    "label": "Relink Workspace Reference",
+    "group": "Workspace",
+    "needs": "reference"
+  },
+  {
+    "id": "reference-remove",
+    "label": "Remove Reference from Workspace",
+    "group": "Workspace",
+    "needs": "reference"
+  },
+  {
+    "id": "diagram-in",
+    "label": "Zoom Diagram In",
+    "group": "View",
+    "needs": "diagram"
+  },
+  {
+    "id": "diagram-out",
+    "label": "Zoom Diagram Out",
+    "group": "View",
+    "needs": "diagram"
+  },
+  {
+    "id": "diagram-reset",
+    "label": "Reset Diagram Zoom",
+    "group": "View",
+    "needs": "diagram"
+  },
+  {
+    "id": "diagram-fit",
+    "label": "Fit Diagram",
+    "group": "View",
+    "needs": "diagram"
+  },
+  {
+    "id": "diagram-fullscreen",
+    "label": "Toggle Diagram Full Screen",
+    "group": "View",
+    "needs": "diagram"
   }
 ]

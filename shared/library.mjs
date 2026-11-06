@@ -127,7 +127,8 @@ function applyOperation(raw, op) {
     case "workspace-add": {
       const n = findNode(s.workspaces, op.id);
       if (n?.type !== "folder") break;
-      const ids = new Set(collectFiles(n.children).map((f) => f.id));
+      const root = s.workspaces.find((root) => findNode([root], op.id));
+      const ids = new Set(collectFiles(root.children).map((f) => f.id));
       function prune(ns) {
         return nodes(ns).flatMap((x) => {
           if (x.type === "file") {
@@ -165,7 +166,15 @@ function applyOperation(raw, op) {
     }
     case "workspace-relink": {
       const n = findNode(s.workspaces, op.id);
-      if (n?.type === "file" && fileOK(op.file)) n.file = op.file;
+      if (n?.type === "file" && fileOK(op.file)) {
+        const root = s.workspaces.find((root) => findNode([root], op.id));
+        if (
+          n.file.id !== op.file.id &&
+          collectFiles(root.children).some((f) => f.id === op.file.id)
+        )
+          throw Error("This file is already referenced in this workspace.");
+        n.file = op.file;
+      }
       break;
     }
     default:

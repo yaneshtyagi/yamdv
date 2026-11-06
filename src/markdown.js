@@ -29,10 +29,12 @@ const parser = unified()
   .use(remarkGfm)
   .use(remarkMath)
   .use(metadata);
-export function outlineFor(source) {
+export function analyzeMarkdown(source) {
   const tree = parser.runSync(parser.parse(source));
   const result = [];
+  let hasDiagram = false;
   function visit(n) {
+    if (n.type === "code" && n.lang === "mermaid") hasDiagram = true;
     if (n.type === "heading")
       result.push({
         id: n.data.hProperties.id,
@@ -43,7 +45,7 @@ export function outlineFor(source) {
     n.children?.forEach(visit);
   }
   visit(tree);
-  return result;
+  return { outline: result, hasDiagram };
 }
 export function safeDiagram(source) {
   if (source.length > 100000)
@@ -53,4 +55,8 @@ export function safeDiagram(source) {
       "Diagram configuration directives, frontmatter and click actions are disabled for safety.",
     );
   return source;
+}
+
+export function outlineFor(source) {
+  return analyzeMarkdown(source).outline;
 }

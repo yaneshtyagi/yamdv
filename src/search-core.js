@@ -3,6 +3,8 @@ export function compileQuery(
   { regex = false, caseSensitive = false } = {},
 ) {
   if (!query) return null;
+  if (query.length > 2048)
+    throw Error("Search query exceeds the 2,048 character limit.");
   return new RegExp(
     regex ? query : query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
     caseSensitive ? "g" : "gi",

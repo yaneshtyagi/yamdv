@@ -49,9 +49,14 @@ export function FileRow({
   favorite,
   status,
   selected,
+  onReference,
+  referenceId,
 }) {
   return (
-    <div className={"file-row " + (selected ? "selected" : "")}>
+    <div
+      className={"file-row " + (selected ? "selected" : "")}
+      onFocus={() => onReference?.({ file, nodeId: referenceId })}
+    >
       <button
         data-nav
         className="file-select"
@@ -186,6 +191,7 @@ export function WorkspaceTree({
       <FileRow
         key={node.id}
         file={node.file}
+        referenceId={node.id}
         {...props}
         status={statuses[node.file.id] || "checking"}
         favorite={props.favorites.some((f) => f.id === node.file.id)}

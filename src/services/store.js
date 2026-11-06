@@ -82,7 +82,24 @@ export async function handleStore(id, value) {
     const tx = db.transaction("handles", value ? "readwrite" : "readonly"),
       s = tx.objectStore("handles");
     const req = value ? s.put(value, id) : s.get(id);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    tx.oncomplete = () => resolve(req.result);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function storedHandles() {
+  const db = await database();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("handles"),
+      s = tx.objectStore("handles"),
+      keys = s.getAllKeys(),
+      values = s.getAll();
+    tx.oncomplete = () =>
+      resolve(
+        keys.result
+          .map((key, i) => [key, values.result[i]])
+          .filter(([, h]) => h?.kind === "file"),
+      );
+    tx.onerror = () => reject(tx.error);
   });
 }

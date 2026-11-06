@@ -26,15 +26,16 @@ export function workerSearch(
   query,
   options,
   signal,
-  { WorkerClass = Worker, timeout = 1500 } = {},
+  { WorkerClass, timeout = 1500 } = {},
 ) {
   return new Promise((resolve, reject) => {
     if (signal?.aborted)
       return reject(new DOMException("Canceled", "AbortError"));
-    const worker = new WorkerClass(
-      new URL("../search.worker.js", import.meta.url),
-      { type: "module" },
-    );
+    const worker = WorkerClass
+      ? new WorkerClass()
+      : new Worker(new URL("../search.worker.js", import.meta.url), {
+          type: "module",
+        });
     const finish = (err, value) => {
       clearTimeout(timer);
       signal?.removeEventListener("abort", abort);

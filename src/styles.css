@@ -863,3 +863,8 @@ mark {
     display: none;
   }
 }
+
+.search-result.active {
+  background: var(--selected);
+  border-radius: 3px;
+}
