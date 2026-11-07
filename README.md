@@ -1,6 +1,6 @@
 # YAMDV
 
-**Yet Another MarkDown Viewer** — a compact, local-first Markdown reading desk built with React and Electron. Version **0.0.1**.
+**Yet Another MarkDown Viewer** — a compact, local-first Markdown reading desk built with React and Electron. Version **0.0.2**.
 
 For the complete feature guide, see [HELP.md](HELP.md), also available inside the app through **Read Full Help**.
 
@@ -44,9 +44,9 @@ Favorites, the last **200 distinct opened references**, theme, Vim preference, a
 
 The application shell stays fixed to the viewport. Reading, outline/search jumps, and focus restoration scroll their own pane without moving the toolbar, sidebar chrome, or status bar.
 
-The compact sidebar has Folder, Favorites, History, Outline, and Workspaces sections. Icons have accessible labels and tooltips. File lists can be filtered by file name or relative path. Use each file's star button or **Toggle Favorite** to keep it in Favorites.
+The compact sidebar has Folder, Favorites, History, Outline, and Workspaces sections. Icons have accessible labels and tooltips. File lists can be filtered by file name or relative path. Scroll sideways to see long names. Drag the sidebar divider to resize it, or focus the divider and use Left/Right. YAMDV remembers the width locally. Use each file's star button or **Toggle Favorite** to keep it in Favorites.
 
-Outline is built from the Markdown syntax tree, includes H1–H6 and setext headings, ignores fenced code, and understands inline formatting. A shared GitHub-style slugger assigns unique IDs to duplicate headings, so outline and heading links agree. Selecting an entry reveals and highlights the heading.
+Outline is built from the Markdown syntax tree, includes H1–H6 and setext headings, ignores fenced code, and understands inline formatting. A shared GitHub-style slugger assigns unique IDs to duplicate headings, so outline and heading links agree. Selecting an entry reveals its heading. The outline follows the reading cursor and returns focus to the current heading when you reopen it.
 
 The theme icon opens Light, Dark, and System choices with the selected setting checked. System follows OS changes immediately. GitHub Markdown CSS is scoped to the reading area and follows the selected theme.
 
@@ -127,6 +127,7 @@ Electron has File, Edit, View, Navigate, Workspace, and Help menus (plus the pla
 | Next / Previous Match                               | F3 / Shift+F3                                      | F3 / Shift+F3                                    |
 | Document Zoom In / Out / Reset                      | Cmd+Plus / Minus / 0                               | Ctrl+Plus / Minus / 0                            |
 | Toggle Sidebar                                      | Cmd+B                                              | Ctrl+B                                           |
+| Previous / next sibling section                     | Cmd+Option+Up / Down                               | Ctrl+Alt+Up / Down                               |
 | Folder / Favorites / History / Outline / Workspaces | Cmd+1 through Cmd+5                                | Ctrl+1 through Ctrl+5                            |
 | Toggle Favorite                                     | Cmd+D                                              | Ctrl+D                                           |
 | Command Palette                                     | Cmd+Shift+P                                        | Ctrl+Shift+P                                     |
@@ -159,6 +160,6 @@ UI suites use isolated temporary profiles and disposable fixtures; no personal b
 
 Architecture: React tab reducer for window-local state; versioned shared operation reducer for library/workspaces; Electron authoritative serialized store or browser IndexedDB transaction store; narrow file-service abstraction; source-position Markdown metadata; isolated regex workers; lazy document/diagram rendering. `tests/` contains regression checks for these boundaries and representative UI flows.
 
-The existing `v0.0.1` Git tag is intentionally left at its original commit. Package/app metadata is reconciled from the previous `1.0.0` value to the explicitly requested `0.0.1`; no existing tag is moved or recreated.
+The package and application report version `0.0.2`. The existing `v0.0.1` Git tag remains at its original commit.
 
 The supplied `logo/logo.png` is retained unchanged. `scripts/assets.mjs` crops/resizes derivatives into `public/` and `build/`, and generates scoped GitHub Markdown styles from the installed package. Third-party packages retain their licenses; GitHub Markdown CSS is MIT licensed.

@@ -60,7 +60,7 @@ import {
   commandKeys,
   shortcutLabel,
 } from "./commands";
-import { analyzeMarkdown } from "./markdown";
+import { analyzeMarkdown, siblingHeading } from "./markdown";
 import { resolveRelative } from "./library";
 import {
   FileTree,
@@ -68,6 +68,8 @@ import {
   WorkspaceTree,
   navigationKey,
 } from "./components/Navigation";
+import SidebarDivider from "./components/SidebarDivider";
+import { version } from "../package.json";
 import Modal from "./components/Modal";
 import Popup from "./components/Popup";
 import SearchPanel from "./components/SearchPanel";
@@ -81,6 +83,7 @@ const sections = [
   ["outline", ListTree, "Outline"],
   ["workspaces", Library, "Workspaces"],
 ];
+const themeIcons = { light: Sun, dark: Moon, system: Monitor };
 const welcome = `# YAMDV\n\nYour Markdown reading desk. Open a file or folder to begin.\n\n- **⌘/Ctrl+O** — open Markdown files\n- **⌘/Ctrl+Shift+O** — open a folder\n- **⌘/Ctrl+Shift+P** — find any command\n\nUse the **+** button to create a tab. Files normally replace the active tab; use a file’s actions menu to open it in a new tab.\n\n### A workspace is a collection of references\n\nOrganize files from different folders without moving or copying your documents.\n`;
 export default function App() {
   const [library, setLibrary] = useState(normalize),
@@ -90,6 +93,14 @@ export default function App() {
     [folder, setFolder] = useState("No folder open"),
     [filter, setFilter] = useState(""),
     [sidebar, setSidebar] = useState(true),
+    [sidebarWidth, setSidebarWidth] = useState(() => {
+      try {
+        return Number(localStorage.getItem("yamdv.sidebarWidth")) || null;
+      } catch {
+        return null;
+      }
+    }),
+    [cursorHeading, setCursorHeading] = useState(null),
     [selectedWorkspace, setSelectedWorkspace] = useState(null),
     [statuses, setStatuses] = useState({}),
     [reference, setReference] = useState(null),
@@ -116,6 +127,29 @@ export default function App() {
     menuButtonRef = useRef(),
     readerPositions = useRef(new Map()),
     codeWraps = useRef(new Map());
+  const reportHeading = useCallback((viewId, id) => {
+    setCursorHeading((current) =>
+      current?.viewId === viewId && current.id === id
+        ? current
+        : { viewId, id },
+    );
+  }, []);
+  function resizeSidebar(width) {
+    const next = Math.round(
+      Math.max(180, Math.min(width, (window.innerWidth * 0.65) / uiZoom)),
+    );
+    setSidebarWidth(next);
+    try {
+      localStorage.setItem("yamdv.sidebarWidth", String(next));
+    } catch {}
+  }
+  function focusSidebarItem() {
+    const nav = navRef.current;
+    (
+      nav?.querySelector('[aria-current="location"]') ||
+      nav?.querySelector("[data-nav]")
+    )?.focus();
+  }
   const accept = useCallback(
     (next) => setLibrary((old) => (next.revision >= old.revision ? next : old)),
     [],
@@ -384,7 +418,26 @@ export default function App() {
     () => analyzeMarkdown(active?.content || ""),
     [active?.content],
   );
+  const outline = markdownInfo.outline;
+  const currentHeading =
+    cursorHeading?.viewId === active?.viewId ? cursorHeading?.id : null;
+  const previousSection = siblingHeading(outline, currentHeading, -1);
+  const nextSection = siblingHeading(outline, currentHeading, 1);
+  useEffect(() => {
+    if (section !== "outline" || searchScope) return;
+    const nav = navRef.current;
+    const item = nav?.querySelector('[aria-current="location"]');
+    if (!item) return;
+    const bounds = nav.getBoundingClientRect();
+    const row = item.getBoundingClientRect();
+    const scale = bounds.height / nav.offsetHeight || 1;
+    if (row.top < bounds.top) nav.scrollTop += (row.top - bounds.top) / scale;
+    else if (row.bottom > bounds.bottom)
+      nav.scrollTop += (row.bottom - bounds.bottom) / scale;
+  }, [currentHeading, section, sidebar, searchScope, sidebarWidth]);
   const ctx = {
+    previousSection: !!previousSection,
+    nextSection: !!nextSection,
     reference:
       section === "workspaces" &&
       !!reference?.nodeId &&
@@ -407,6 +460,11 @@ export default function App() {
       !commandEnabled(c, { ...ctx, reference: !!targetReference?.nodeId })
     )
       return;
+    if (id === "previous-section" || id === "next-section") {
+      const heading = id === "previous-section" ? previousSection : nextSection;
+      dispatch({ type: "patch", patch: { target: { heading: heading.id } } });
+      return;
+    }
     if (id === "focus-document") {
       requestAnimationFrame(() =>
         readerRef.current?.focus({ preventScroll: true }),
@@ -442,7 +500,11 @@ export default function App() {
       setModal(null);
       const r = menuButtonRef.current?.getBoundingClientRect();
       requestAnimationFrame(() =>
-        setPopup({ type: "app", x: r?.left || 8, y: r?.bottom || 44 }),
+        setPopup({
+          type: "app",
+          x: r ? r.right - 275 * uiZoom : 8,
+          y: r?.bottom || 44,
+        }),
       );
       return;
     }
@@ -554,9 +616,7 @@ export default function App() {
       setSection(id.slice(8));
       setSearchScope(null);
       setSidebar(true);
-      requestAnimationFrame(() =>
-        navRef.current?.querySelector("[data-nav]")?.focus(),
-      );
+      requestAnimationFrame(focusSidebarItem);
       return;
     }
     if (id === "toggle-sidebar") {
@@ -624,7 +684,7 @@ export default function App() {
       } else if (e.key === "Escape") {
         setPopup(null);
         setSearchScope(null);
-        navRef.current?.querySelector("[data-nav]")?.focus();
+        focusSidebarItem();
       }
     };
     window.addEventListener("keydown", listener);
@@ -644,6 +704,8 @@ export default function App() {
     ctx.back,
     ctx.forward,
     ctx.readerVim,
+    ctx.previousSection,
+    ctx.nextSection,
   ]);
   function onLink(href, newTab) {
     if (!href) return;
@@ -684,7 +746,6 @@ export default function App() {
       setError(e.message);
     }
   }
-  const outline = markdownInfo.outline;
   const displayed = (
     section === "folder"
       ? files
@@ -748,22 +809,13 @@ export default function App() {
       }}
     >
       <header className="app-toolbar">
-        <button
-          className="icon-button"
-          aria-label="Application Menu"
-          ref={menuButtonRef}
-          title="Application menu and commands"
-          onClick={() => run("application-menu")}
-        >
-          <Menu size={17} />
-        </button>
-        <button
-          className="icon-button"
-          aria-label="Toggle Sidebar"
-          onClick={() => run("toggle-sidebar")}
-        >
-          <PanelLeft size={16} />
-        </button>
+        <div className="brand">
+          <img src="./logo.png" alt="" />
+          <div>
+            <strong>YAMDV</strong>
+            <small>Yet Another MarkDown Viewer</small>
+          </div>
+        </div>
         <button className="toolbar-button" onClick={() => run("open-folder")}>
           <FolderOpen size={15} />
           Open Folder
@@ -804,187 +856,207 @@ export default function App() {
             <Sun size={16} />
           )}
         </button>
-        <div className="brand">
-          <img src="./logo.png" alt="" />
-          <div>
-            <strong>YAMDV</strong>
-            <small>Yet Another MarkDown Viewer</small>
-          </div>
-        </div>
+        <button
+          className="icon-button"
+          aria-label="Toggle Sidebar"
+          onClick={() => run("toggle-sidebar")}
+        >
+          <PanelLeft size={16} />
+        </button>
+        <button
+          className="icon-button"
+          aria-label="Application Menu"
+          ref={menuButtonRef}
+          title="Application menu and commands"
+          onClick={() => run("application-menu")}
+        >
+          <Menu size={17} />
+        </button>
       </header>
       <div className="workbench">
         {sidebar && (
-          <aside className="sidebar">
-            <nav className="sidebar-tabs" aria-label="Sidebar sections">
-              {sections.map(([id, Icon, label]) => (
-                <button
-                  key={id}
-                  aria-label={label}
-                  title={label}
-                  aria-pressed={section === id && !searchScope}
-                  onClick={() => {
-                    setSection(id);
-                    setSearchScope(null);
-                    setFilter("");
-                  }}
-                >
-                  <Icon size={15} />
-                  <span>{label}</span>
-                </button>
-              ))}
-            </nav>
-            {searchScope ? (
-              <SearchPanel
-                scope={searchScope}
-                onScope={setSearchScope}
-                sources={sources}
-                onResult={resultOpen}
-                onResults={updateResults}
-                activeResult={results[resultIndex]}
-                onClose={() => setSearchScope(null)}
-              />
-            ) : (
-              <>
-                <div className="sidebar-heading">
-                  <strong>
-                    {section === "folder"
-                      ? folder
-                      : section === "outline"
-                        ? "DOCUMENT OUTLINE"
-                        : section.toUpperCase()}
-                  </strong>
-                  {section === "workspaces" && (
-                    <button
-                      aria-label="Create Workspace"
-                      onClick={() => run("workspace-create")}
-                    >
-                      <Plus size={14} />
-                    </button>
+          <>
+            <aside
+              className="sidebar"
+              style={{ width: sidebarWidth ?? undefined }}
+            >
+              <nav className="sidebar-tabs" aria-label="Sidebar sections">
+                {sections.map(([id, Icon, label]) => (
+                  <button
+                    key={id}
+                    aria-label={label}
+                    title={label}
+                    aria-pressed={section === id && !searchScope}
+                    onClick={() => {
+                      setSection(id);
+                      setSearchScope(null);
+                      setFilter("");
+                      if (id === "outline")
+                        requestAnimationFrame(focusSidebarItem);
+                    }}
+                  >
+                    <Icon size={15} />
+                    <span>{label}</span>
+                  </button>
+                ))}
+              </nav>
+              {searchScope ? (
+                <SearchPanel
+                  scope={searchScope}
+                  onScope={setSearchScope}
+                  sources={sources}
+                  onResult={resultOpen}
+                  onResults={updateResults}
+                  activeResult={results[resultIndex]}
+                  onClose={() => setSearchScope(null)}
+                />
+              ) : (
+                <>
+                  <div className="sidebar-heading">
+                    <strong>
+                      {section === "folder"
+                        ? folder
+                        : section === "outline"
+                          ? "DOCUMENT OUTLINE"
+                          : section.toUpperCase()}
+                    </strong>
+                    {section === "workspaces" && (
+                      <button
+                        aria-label="Create Workspace"
+                        onClick={() => run("workspace-create")}
+                      >
+                        <Plus size={14} />
+                      </button>
+                    )}
+                  </div>
+                  {!["outline", "workspaces"].includes(section) && (
+                    <input
+                      className="file-filter"
+                      aria-label="Filter Files"
+                      placeholder="Filter files…"
+                      value={filter}
+                      onChange={(e) => setFilter(e.target.value)}
+                    />
                   )}
-                </div>
-                {!["outline", "workspaces"].includes(section) && (
-                  <input
-                    className="file-filter"
-                    aria-label="Filter Files"
-                    placeholder="Filter files…"
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                  />
-                )}
-                <div
-                  ref={navRef}
-                  className="navigation"
-                  aria-label={section + " navigation"}
-                  onKeyDown={(e) => navigationKey(e, library.vim)}
-                >
-                  {section === "outline" ? (
-                    outline.length ? (
-                      outline.map((h) => (
-                        <button
-                          data-nav
-                          key={h.id}
-                          className="outline-item"
-                          style={{ paddingLeft: 10 + (h.depth - 1) * 12 }}
-                          onClick={() =>
-                            dispatch({
-                              type: "patch",
-                              patch: { target: { heading: h.id } },
-                            })
-                          }
-                        >
-                          <small>H{h.depth}</small>
-                          <span>{h.text || "(empty heading)"}</span>
-                        </button>
-                      ))
-                    ) : (
-                      <p className="empty-state">
-                        No headings in this document.
-                      </p>
-                    )
-                  ) : section === "workspaces" ? (
-                    <>
-                      <WorkspaceTree
-                        nodes={library.workspaces}
-                        selected={selectedWorkspace}
-                        onSelect={setSelectedWorkspace}
-                        onFolderMenu={(node, x, y) => {
-                          setSelectedWorkspace(node.id);
-                          setPopup({ type: "workspace", node, x, y });
-                        }}
-                        statuses={statuses}
-                        {...rowProps}
-                      />
-                      {!library.workspaces.length && (
+                  <div
+                    ref={navRef}
+                    className="navigation"
+                    aria-label={section + " navigation"}
+                    onKeyDown={(e) => navigationKey(e, library.vim)}
+                  >
+                    {section === "outline" ? (
+                      outline.length ? (
+                        outline.map((h) => (
+                          <button
+                            data-nav
+                            key={h.id}
+                            className="outline-item"
+                            aria-current={
+                              h.id === currentHeading ? "location" : undefined
+                            }
+                            style={{ paddingLeft: 10 + (h.depth - 1) * 12 }}
+                            onClick={() =>
+                              dispatch({
+                                type: "patch",
+                                patch: { target: { heading: h.id } },
+                              })
+                            }
+                          >
+                            <small>H{h.depth}</small>
+                            <span>{h.text || "(empty heading)"}</span>
+                          </button>
+                        ))
+                      ) : (
                         <p className="empty-state">
-                          Create a workspace to organize references without
-                          moving files.
+                          No headings in this document.
+                        </p>
+                      )
+                    ) : section === "workspaces" ? (
+                      <>
+                        <WorkspaceTree
+                          nodes={library.workspaces}
+                          selected={selectedWorkspace}
+                          onSelect={setSelectedWorkspace}
+                          onFolderMenu={(node, x, y) => {
+                            setSelectedWorkspace(node.id);
+                            setPopup({ type: "workspace", node, x, y });
+                          }}
+                          statuses={statuses}
+                          {...rowProps}
+                        />
+                        {!library.workspaces.length && (
+                          <p className="empty-state">
+                            Create a workspace to organize references without
+                            moving files.
+                          </p>
+                        )}
+                      </>
+                    ) : section === "folder" ? (
+                      <FileTree files={displayed} {...rowProps} />
+                    ) : (
+                      displayed.map((file) => (
+                        <FileRow
+                          key={file.id}
+                          file={file}
+                          {...rowProps}
+                          favorite={library.favorites.some(
+                            (f) => f.id === file.id,
+                          )}
+                          selected={active?.file?.id === file.id}
+                        />
+                      ))
+                    )}
+                    {!["outline", "workspaces"].includes(section) &&
+                      !displayed.length && (
+                        <p className="empty-state">
+                          {filter
+                            ? "No matching files."
+                            : section === "favorites"
+                              ? "Star a document to keep it here."
+                              : section === "history"
+                                ? "Recently opened files appear here."
+                                : "Open a folder or Markdown files."}
                         </p>
                       )}
-                    </>
-                  ) : section === "folder" ? (
-                    <FileTree files={displayed} {...rowProps} />
-                  ) : (
-                    displayed.map((file) => (
-                      <FileRow
-                        key={file.id}
-                        file={file}
-                        {...rowProps}
-                        favorite={library.favorites.some(
-                          (f) => f.id === file.id,
-                        )}
-                        selected={active?.file?.id === file.id}
-                      />
-                    ))
-                  )}
-                  {!["outline", "workspaces"].includes(section) &&
-                    !displayed.length && (
-                      <p className="empty-state">
-                        {filter
-                          ? "No matching files."
-                          : section === "favorites"
-                            ? "Star a document to keep it here."
-                            : section === "history"
-                              ? "Recently opened files appear here."
-                              : "Open a folder or Markdown files."}
-                      </p>
-                    )}
-                </div>
-                {section === "workspaces" && workspace && (
-                  <div className="workspace-actions">
-                    <span title={workspace.name}>{workspace.name}</span>
-                    <button onClick={() => run("workspace-add-files")}>
-                      + Files
-                    </button>
-                    <button onClick={() => run("workspace-add-folder")}>
-                      + Folder
-                    </button>
-                    <button
-                      aria-label="Workspace Actions"
-                      onClick={(e) => {
-                        const r = e.currentTarget.getBoundingClientRect();
-                        setPopup({
-                          type: "workspace",
-                          node: workspace,
-                          x: r.left,
-                          y: r.bottom,
-                        });
-                      }}
-                    >
-                      ⋯
-                    </button>
                   </div>
-                )}
-              </>
-            )}
-            <div className="sidebar-status">
-              <span>
-                {library.vim ? "Vim navigation on" : "Arrow-key navigation"}
-              </span>
-              <button aria-label="Keyboard Help" onClick={() => run("help")}>
-                ?
-              </button>
-            </div>
-          </aside>
+                  {section === "workspaces" && workspace && (
+                    <div className="workspace-actions">
+                      <span title={workspace.name}>{workspace.name}</span>
+                      <button onClick={() => run("workspace-add-files")}>
+                        + Files
+                      </button>
+                      <button onClick={() => run("workspace-add-folder")}>
+                        + Folder
+                      </button>
+                      <button
+                        aria-label="Workspace Actions"
+                        onClick={(e) => {
+                          const r = e.currentTarget.getBoundingClientRect();
+                          setPopup({
+                            type: "workspace",
+                            node: workspace,
+                            x: r.left,
+                            y: r.bottom,
+                          });
+                        }}
+                      >
+                        ⋯
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+              <div className="sidebar-status">
+                <span>
+                  {library.vim ? "Vim navigation on" : "Arrow-key navigation"}
+                </span>
+                <button aria-label="Keyboard Help" onClick={() => run("help")}>
+                  ?
+                </button>
+              </div>
+            </aside>
+            <SidebarDivider onResize={resizeSidebar} />
+          </>
         )}
         <main>
           <div
@@ -1135,6 +1207,7 @@ export default function App() {
                   onReaderFocus={setReaderFocused}
                   vim={library.vim}
                   positions={readerPositions}
+                  onHeadingChange={reportHeading}
                   codeWraps={codeWraps}
                   theme={resolvedTheme}
                   onLink={onLink}
@@ -1170,7 +1243,7 @@ export default function App() {
               >
                 {Math.round((active?.zoom || 1) * 100)}%
               </button>
-              <span className="version">v0.0.1</span>
+              <span className="version">v{version}</span>
             </span>
           </footer>
         </main>
@@ -1183,15 +1256,17 @@ export default function App() {
           label={popup.type === "theme" ? "Theme" : "Actions"}
         >
           {popup.type === "theme" ? (
-            ["light", "dark", "system"].map((value) => (
+            Object.entries(themeIcons).map(([value, Icon]) => (
               <button
+                className="theme-option"
                 key={value}
                 role="menuitemradio"
                 aria-checked={library.theme === value}
                 onClick={() => run("theme-" + value)}
               >
-                {library.theme === value ? "✓" : "　"}{" "}
-                {value[0].toUpperCase() + value.slice(1)}
+                <Icon size={15} aria-hidden="true" />
+                <span>{value[0].toUpperCase() + value.slice(1)}</span>
+                {library.theme === value && <span aria-hidden="true">✓</span>}
               </button>
             ))
           ) : popup.type === "file" ? (
