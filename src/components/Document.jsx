@@ -13,6 +13,7 @@ import "katex/dist/katex.min.css";
 import { metadata } from "../markdown";
 import Diagram from "./Diagram";
 import ReadingCursor from "./ReadingCursor";
+import { centerInReader } from "../scrolling";
 import { copyText } from "../services/clipboard";
 import { resolveRelative } from "../library";
 import { resolveImage } from "../services/files";
@@ -66,7 +67,7 @@ export default function Document({
       }
       if (el) {
         el.classList.add("search-hit");
-        el.scrollIntoView({ block: "center", behavior: "instant" });
+        centerInReader(root.current, el);
       }
     }, 80);
     return () => clearTimeout(timer);

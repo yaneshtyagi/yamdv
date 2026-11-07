@@ -91,13 +91,13 @@ export default function Diagram({ source, theme }) {
   }
   function exit() {
     setFull(false);
-    queueMicrotask(() => closing.current?.focus());
+    queueMicrotask(() => closing.current?.focus({ preventScroll: true }));
   }
   useEffect(() => {
     if (full) {
       origin.current = document.activeElement;
       viewport.current?.focus();
-    } else origin.current?.focus();
+    } else origin.current?.focus({ preventScroll: true });
   }, [full]);
   useEffect(() => {
     const listener = (e) => {

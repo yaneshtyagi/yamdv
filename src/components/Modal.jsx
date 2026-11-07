@@ -7,7 +7,7 @@ export default function Modal({ title, children, onClose, className = "" }) {
     ref.current
       .querySelector("[data-autofocus],input,select,textarea")
       ?.focus();
-    return () => before?.isConnected && before.focus();
+    return () => before?.isConnected && before.focus({ preventScroll: true });
   }, []);
   return (
     <dialog

@@ -12,7 +12,7 @@ export default function Popup({ children, x, y, onClose, label = "Actions" }) {
     document.addEventListener("pointerdown", outside);
     return () => {
       document.removeEventListener("pointerdown", outside);
-      if (before?.isConnected) before.focus();
+      if (before?.isConnected) before.focus({ preventScroll: true });
     };
   }, []);
   return (

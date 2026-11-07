@@ -42,6 +42,8 @@ Favorites, the last **200 distinct opened references**, theme, Vim preference, a
 
 ## Navigation and appearance
 
+The application shell stays fixed to the viewport. Reading, outline/search jumps, and focus restoration scroll their own pane without moving the toolbar, sidebar chrome, or status bar.
+
 The compact sidebar has Folder, Favorites, History, Outline, and Workspaces sections. Icons have accessible labels and tooltips. File lists can be filtered by file name or relative path. Use each file's star button or **Toggle Favorite** to keep it in Favorites.
 
 Outline is built from the Markdown syntax tree, includes H1–H6 and setext headings, ignores fenced code, and understands inline formatting. A shared GitHub-style slugger assigns unique IDs to duplicate headings, so outline and heading links agree. Selecting an entry reveals and highlights the heading.
@@ -146,6 +148,8 @@ npm run test:reading     # browser keyboard/reading workflow
 npm run test:reading:desktop # Electron keyboard/reading workflow
 npm run test:cursor      # browser wrapping/cursor/Vim/clipboard/UI-zoom workflow
 npm run test:cursor:desktop # corresponding Electron workflow
+npm run test:scroll      # long-document scroll-containment regression
+npm run test:scroll:desktop # corresponding Electron check
 npm run package          # desktop packaging
 npm run format           # format maintained source and tests
 npm run assets           # regenerate derivatives from logo/logo.png and GitHub CSS

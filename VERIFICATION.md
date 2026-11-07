@@ -4,7 +4,7 @@ Validated on macOS ARM64 with Node.js 26.13.0, Google Chrome, and Electron 45.2.
 
 | Check                                   | Result                                                                |
 | --------------------------------------- | --------------------------------------------------------------------- |
-| `npm test`                              | 29 tests passed across 7 files                                        |
+| `npm test`                              | 31 tests passed across 8 files                                        |
 | `npm run build`                         | Passed; static production build generated                             |
 | `node tests/ui.mjs`                     | Passed against the production web build in an isolated Chrome context |
 | `node tests/smoke.mjs`                  | Passed against the Electron source entry point                        |
@@ -68,3 +68,17 @@ YAMDV_PACKAGED="/absolute/path/to/YAMDV.app/Contents/MacOS/YAMDV" node tests/cur
 ```
 
 Vim support is a documented read-only navigation/selection subset, not an editable Vim engine. Visual copying uses rendered plain text; ordinary fenced blocks also provide literal code copying. Cursor positions and wrapping are retained with tab visits for the current session, not across application restarts. Browser clipboard policies may reject programmatic copying; in that case the selection remains for the system Copy shortcut. Native Windows/Linux shortcut behavior remains unverified on this macOS host.
+
+## Whole-window scrolling regression
+
+Reproduced the reported overflow with a generated 180-section document and a 45-file sidebar: the uncorrected outer document grew to 16,861 px in an 850 px viewport. A hidden, absolutely positioned screen-reader status element lacked an anchored containing block, and heading/search jumps used ancestor-scrolling `scrollIntoView`.
+
+The fix anchors that status element inside the reader, clips the application shell to the viewport, prevents focus restoration from scrolling the page, and centers heading/search targets by scrolling only the reader (including UI-zoom coordinate conversion). The regression suite asserts that the outer document remains viewport-sized, window/app-shell scroll offsets remain zero, and toolbar/sidebar/status-bar geometry stays fixed while reader scroll exceeds 16,000 px. It covers long-file opening, deep outline/search jumps, back-navigation restoration, Vim movement, explicit outer-window scroll attempts, and UI zoom.
+
+```sh
+npm run test:scroll
+npm run test:scroll:desktop
+YAMDV_PACKAGED="/absolute/path/to/YAMDV.app/Contents/MacOS/YAMDV" node tests/scroll-ui.mjs --desktop
+```
+
+Both browser and actual packaged macOS regression runs passed. All existing browser/native smoke, reading, and cursor suites also passed; unit tests now total 31 across 8 files.
