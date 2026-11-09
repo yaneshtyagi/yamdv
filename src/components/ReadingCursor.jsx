@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   textModel,
@@ -16,10 +16,11 @@ export default function ReadingCursor({
   content,
   vim,
   positions,
+  onHeadingChange,
 }) {
   const [display, setDisplay] = useState(null),
     [message, setMessage] = useState("");
-  useLayoutEffect(() => {
+  useEffect(() => {
     const reader = readerRef.current,
       article = reader?.querySelector("article");
     if (!article) return;
@@ -32,12 +33,14 @@ export default function ReadingCursor({
       frame = 0,
       ownSelection = false,
       disposed = false,
-      lastHit = null,
-      copying = false;
+      copying = false,
+      reportedHeading;
     const selection = () => window.getSelection();
-    function capture() {
+    function capture(backward = false) {
       const s = selection();
-      return s?.focusNode ? model.offset(s.focusNode, s.focusOffset) : null;
+      return s?.focusNode
+        ? model.offset(s.focusNode, s.focusOffset, backward)
+        : null;
     }
     function collapse(offset) {
       const point = model.point(offset);
@@ -48,8 +51,23 @@ export default function ReadingCursor({
       const s = selection();
       if (s?.modify) {
         s.modify("move", direction, granularity);
-        const result = capture();
-        if (result !== null) return result;
+        const backwardLine = direction === "backward" && granularity === "line";
+        const result = capture(backwardLine);
+        if (result !== null) {
+          // Chromium can land on the same rendered line when moving up over an hr.
+          if (
+            backwardLine &&
+            caretRect(model, result)?.top === caretRect(model, offset)?.top
+          ) {
+            const rule = model.rules.find(
+              ({ after }) =>
+                after <= offset &&
+                caretRect(model, after)?.top === caretRect(model, offset)?.top,
+            );
+            if (rule && rule.before < offset) return rule.before;
+          }
+          return result;
+        }
         return direction === "backward" ? 0 : model.text.length;
       }
       return direction === "backward"
@@ -98,6 +116,14 @@ export default function ReadingCursor({
         reader.dataset.readerMode = mode;
         reader.dataset.readerOffset = String(cursor);
         positions.current.set(viewId, cursor);
+        const heading =
+          model.headings.findLast(
+            (entry) => entry.offset !== null && entry.offset <= cursor,
+          )?.id ?? null;
+        if (heading !== reportedHeading) {
+          reportedHeading = heading;
+          onHeadingChange(viewId, heading);
+        }
         if (!caret) {
           setDisplay(null);
           return;
@@ -320,7 +346,8 @@ export default function ReadingCursor({
         event.stopPropagation();
       }
     }
-    function focus() {
+    function focus(event) {
+      if (event.type === "focus" && mode === "normal") collapse(cursor);
       draw();
     }
     function pointer(event) {
@@ -364,13 +391,18 @@ export default function ReadingCursor({
       const old = cursor;
       model = textModel(article);
       cursor = Math.min(old, model.text.length);
-      const hit = article.querySelector(".search-hit");
-      if (hit && hit !== lastHit) {
-        const segment = model.nodes.find((s) => hit.contains(s.node));
-        if (segment) cursor = segment.start;
-      }
-      lastHit = hit;
       if (mode !== "normal") updateSelection();
+      draw();
+    }
+    function revealTarget({ detail: element }) {
+      const offset = model.nodes.find(({ node }) =>
+        element.contains(node),
+      )?.start;
+      if (offset === undefined) return;
+      cursor = offset;
+      mode = "normal";
+      anchor = null;
+      if (document.activeElement === reader) collapse(cursor);
       draw();
     }
     const mutation = new MutationObserver((records) => {
@@ -396,6 +428,7 @@ export default function ReadingCursor({
     });
     resize.observe(article);
     resize.observe(reader);
+    reader.addEventListener("reader-reveal", revealTarget);
     reader.addEventListener("keydown", key);
     reader.addEventListener("pointerup", pointer);
     reader.addEventListener("focus", focus);
@@ -411,6 +444,7 @@ export default function ReadingCursor({
       cancelAnimationFrame(frame);
       mutation.disconnect();
       resize.disconnect();
+      reader.removeEventListener("reader-reveal", revealTarget);
       reader.removeEventListener("keydown", key);
       reader.removeEventListener("pointerup", pointer);
       reader.removeEventListener("focus", focus);

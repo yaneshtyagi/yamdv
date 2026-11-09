@@ -17,6 +17,8 @@ import { centerInReader } from "../scrolling";
 import { copyText } from "../services/clipboard";
 import { resolveRelative } from "../library";
 import { resolveImage } from "../services/files";
+const revealedTargets = new WeakSet();
+
 export default function Document({
   tab,
   theme,
@@ -27,6 +29,7 @@ export default function Document({
   positions,
   codeWraps,
   onReaderFocus,
+  onHeadingChange,
 }) {
   const fallbackRoot = useRef();
   const root = readerRef || fallbackRoot;
@@ -40,7 +43,7 @@ export default function Document({
     );
   }, [tab.id, tab.viewId]);
   useEffect(() => {
-    if (!tab.target || !root.current) return;
+    if (!tab.target || revealedTargets.has(tab.target) || !root.current) return;
     const timer = setTimeout(() => {
       const target = tab.target;
       const article = root.current.querySelector("article");
@@ -66,7 +69,11 @@ export default function Document({
         )[0];
       }
       if (el) {
+        revealedTargets.add(target);
         el.classList.add("search-hit");
+        root.current.dispatchEvent(
+          new CustomEvent("reader-reveal", { detail: el }),
+        );
         centerInReader(root.current, el);
       }
     }, 80);
@@ -121,6 +128,7 @@ export default function Document({
         content={tab.content}
         vim={vim}
         positions={positions}
+        onHeadingChange={onHeadingChange}
       />
     </div>
   );

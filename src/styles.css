@@ -125,7 +125,7 @@ button[aria-pressed="true"] {
   display: flex;
   align-items: center;
   gap: 7px;
-  margin-left: 7px;
+  margin-right: 7px;
   white-space: nowrap;
 }
 .brand img {
@@ -152,8 +152,9 @@ button[aria-pressed="true"] {
 }
 .sidebar {
   width: 290px;
-  min-width: 230px;
-  max-width: 40vw;
+  flex: 0 0 auto;
+  min-width: min(180px, 65%);
+  max-width: 65%;
   background: var(--panel);
   border-right: 1px solid var(--border);
   display: flex;
@@ -831,9 +832,6 @@ mark {
   color: var(--muted);
 }
 @media (max-width: 1000px) {
-  .brand small {
-    display: none;
-  }
   .sidebar {
     width: 245px;
   }
@@ -846,12 +844,8 @@ mark {
   }
 }
 @media (max-width: 760px) {
-  .brand div {
-    display: none;
-  }
   .sidebar {
     width: 225px;
-    min-width: 205px;
   }
   .app-toolbar {
     gap: 3px;
@@ -993,4 +987,49 @@ mark {
 .diagram-toolbar,
 .diagram-fullscreen > small {
   user-select: none;
+}
+
+.sidebar-divider {
+  flex: 0 0 5px;
+  cursor: col-resize;
+  touch-action: none;
+  background: var(--panel);
+}
+.sidebar-divider:hover,
+.sidebar-divider:active {
+  background: var(--accent);
+}
+.navigation .file-row,
+.navigation details,
+.outline-item {
+  min-width: max-content;
+}
+.navigation .file-select > span,
+.navigation summary > span,
+.outline-item > span {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+.search-results summary {
+  width: max-content;
+  min-width: 100%;
+  white-space: nowrap;
+}
+.outline-item[aria-current="location"] {
+  background: var(--selected);
+  color: var(--accent);
+}
+.popup .theme-option {
+  justify-content: flex-start;
+  gap: 9px;
+}
+.theme-option > span:first-of-type {
+  flex: 1;
+}
+
+@media (max-width: 580px) {
+  .brand small {
+    display: none;
+  }
 }

@@ -378,5 +378,19 @@
     "id": "read-help",
     "label": "Read Full Help",
     "group": "Help"
+  },
+  {
+    "id": "previous-section",
+    "label": "Previous Section",
+    "group": "Navigate",
+    "key": "Mod+Alt+ArrowUp",
+    "needs": "previousSection"
+  },
+  {
+    "id": "next-section",
+    "label": "Next Section",
+    "group": "Navigate",
+    "key": "Mod+Alt+ArrowDown",
+    "needs": "nextSection"
   }
 ]

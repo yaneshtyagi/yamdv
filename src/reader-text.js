@@ -105,7 +105,7 @@ export function textModel(article) {
         }
       : null;
   }
-  function offset(node, index) {
+  function offset(node, index, backward = false) {
     const found = byNode.get(node);
     if (found) return found.start + Math.min(index, node.length);
     if (!node || !article.contains(node)) return null;
@@ -113,15 +113,32 @@ export function textModel(article) {
     try {
       range.setStart(node, index);
       range.collapse(true);
+      let previous;
       for (const segment of nodes) {
-        if (range.comparePoint(segment.node, 0) >= 0) return segment.start;
+        if (range.comparePoint(segment.node, 0) >= 0) {
+          return backward && previous
+            ? previousCharacter(text, previous.end)
+            : segment.start;
+        }
+        previous = segment;
       }
       return text.length;
     } catch {
       return null;
     }
   }
-  return { text, nodes, point, offset };
+  const headings = Array.from(
+    article.querySelectorAll("h1[id],h2[id],h3[id],h4[id],h5[id],h6[id]"),
+    (element) => ({
+      id: element.id,
+      offset: offset(element, 0),
+    }),
+  );
+  const rules = Array.from(article.querySelectorAll("hr"), (element) => ({
+    after: offset(element, 0),
+    before: offset(element, 0, true),
+  }));
+  return { text, nodes, point, offset, headings, rules };
 }
 export function caretRect(model, offset) {
   const point = model.point(offset);

@@ -60,3 +60,17 @@ export function safeDiagram(source) {
 export function outlineFor(source) {
   return analyzeMarkdown(source).outline;
 }
+
+export function siblingHeading(outline, currentId, direction) {
+  const index = outline.findIndex((heading) => heading.id === currentId);
+  if (index < 0) return direction > 0 ? outline[0] : undefined;
+  const depth = outline[index].depth;
+  for (
+    let i = index + direction;
+    i >= 0 && i < outline.length;
+    i += direction
+  ) {
+    if (outline[i].depth < depth) return;
+    if (outline[i].depth === depth) return outline[i];
+  }
+}

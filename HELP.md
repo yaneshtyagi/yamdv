@@ -24,6 +24,8 @@ Switch tabs with Ctrl+Tab / Ctrl+Shift+Tab. Cmd+Option+Right / Left also switche
 
 In Folder, Favorites, History, Outline, or Workspaces, use Up/Down to move between entries, Home/End for first/last, Left/Right to collapse/expand folders, and Enter or Space to open a focused file button.
 
+Scroll sideways to read long filenames. Drag the sidebar divider to resize it, or focus the divider and press Left/Right. The width is saved locally.
+
 While focus stays in a sidebar navigation list, **Shift+Down** scrolls the active document down and **Shift+Up** scrolls it up. The selected sidebar item and keyboard focus stay in place. These shortcuts do not change selection in text fields.
 
 Use **Cmd/Ctrl+Shift+E** to focus the active document. Arrow keys, Page Up/Page Down, Space/Shift+Space, and Home/End then use the reader’s normal scrolling behavior. Use Cmd/Ctrl+1 through 5 to return focus to a sidebar section.
@@ -60,7 +62,7 @@ This is a reading-oriented Vim subset: it does not implement editing, insert mod
 - **Folder:** recursively browse the currently opened folder, or the set of opened/dropped files. Filter by file name or relative path.
 - **Favorites:** star a document from its toolbar or file row. Favorites persist between sessions and are shared between application windows.
 - **History:** the last 200 distinct opened references. Opening a file updates its position; merely switching tabs does not.
-- **Outline:** H1–H6 headings from the active document. Inline formatting and duplicate headings are handled correctly; headings in code blocks are excluded. Select a heading to reveal it in the reader.
+- **Outline:** H1–H6 headings from the active document. Inline formatting and duplicate headings are handled correctly; headings in code blocks are excluded. Select a heading to reveal it in the reader. The outline highlights the heading that contains the reading cursor, and reopening Outline returns focus to that heading. Use **Cmd+Option+Up/Down** on macOS or **Ctrl+Alt+Up/Down** elsewhere to jump between headings at the same level under the same parent. For example, the next H2 shortcut skips nested H3s and stops at the end of the current H1.
 - **Workspaces:** collections of document references organized into virtual folders.
 
 ## Workspaces
@@ -129,6 +131,7 @@ F1 opens quick shortcut help. **Read Full Help** opens this guide in a new docum
 | Document zoom in / out / reset                      | Cmd+Plus / Minus / 0                               | Ctrl+Plus / Minus / 0                            |
 | Application UI zoom in / out / reset                | Cmd+Option+Plus / Minus / 0                        | Ctrl+Alt+Plus / Minus / 0                        |
 | Toggle sidebar                                      | Cmd+B                                              | Ctrl+B                                           |
+| Previous / next sibling section                     | Cmd+Option+Up / Down                               | Ctrl+Alt+Up / Down                               |
 | Folder / Favorites / History / Outline / Workspaces | Cmd+1 through 5                                    | Ctrl+1 through 5                                 |
 | Toggle favorite                                     | Cmd+D                                              | Ctrl+D                                           |
 | Command palette                                     | Cmd+Shift+P                                        | Ctrl+Shift+P                                     |

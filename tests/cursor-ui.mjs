@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 const desktop = process.argv.includes("--desktop"),
   fixture = await fs.mkdtemp(path.join(os.tmpdir(), "yamdv-cursor-")),
-  file = path.join(fixture, "Cursor.md");
+  file = path.join(fixture, `Cursor-${"long-filename-".repeat(9)}.md`);
 const source =
   '# Cursor demo\n\nFirst paragraph with **bold words** and a [link](https://example.com).\n\nSecond paragraph with more reading.\n\nUnicode 👩‍💻 café text.\n\n```js\nconst long = "' +
   "a".repeat(400) +
@@ -13,7 +13,8 @@ const source =
   Array.from(
     { length: 60 },
     (_, i) => `Reading paragraph ${i}. Keep focus here.\n`,
-  ).join("\n");
+  ).join("\n") +
+  "\n## First subsection\n\nBefore the rule.\n\n---\n\nAfter the rule.\n\n## Second subsection\n\n### Child subsection\n\n# Next chapter\n\n## Different parent\n";
 await fs.writeFile(file, source);
 let app, browser, server, page, originalClipboard;
 try {
@@ -244,10 +245,97 @@ try {
       desktop ? "desktop-cursor.png" : "browser-cursor.png",
     ),
   });
+  await command("Show History");
+  const nav = page.locator(".navigation");
+  const sidebar = page.locator(".sidebar");
+  expect(await nav.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(
+    true,
+  );
+  await nav.evaluate((el) => (el.scrollLeft = el.scrollWidth));
+  expect(await nav.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
+  const initialWidth = (await sidebar.boundingBox()).width;
+  const divider = page.getByRole("separator", { name: "Resize sidebar" });
+  const box = await divider.boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + 100);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 100, box.y + 100);
+  await page.mouse.up();
+  expect((await sidebar.boundingBox()).width).toBeCloseTo(initialWidth + 100);
+  await divider.focus();
+  await page.keyboard.press("ArrowLeft");
+  expect((await sidebar.boundingBox()).width).toBeCloseTo(initialWidth + 84);
+
+  await command("Show Outline");
+  const outline = page.getByLabel("outline navigation");
+  const activeHeading = outline.locator('[aria-current="location"]');
+  await expect(activeHeading).toContainText("Cursor demo");
+  await activeHeading.click();
+  await page.keyboard.press("Meta+Shift+e");
+  await page.keyboard.press("Meta+Alt+ArrowDown");
+  await expect(activeHeading).toContainText("Next chapter");
+  await page.keyboard.press("Meta+Alt+ArrowUp");
+  await expect(activeHeading).toContainText("Cursor demo");
+  await outline.getByRole("button", { name: /First subsection/ }).click();
+  await expect(activeHeading).toContainText("First subsection");
+  await page.keyboard.press("Meta+Shift+e");
+  await page.keyboard.press("Meta+Alt+ArrowDown");
+  await expect(activeHeading).toContainText("Second subsection");
+  const sectionOffset = await reader.getAttribute("data-reader-offset");
+  await command("Show Outline");
+  await expect(activeHeading).toBeFocused();
+  await page.keyboard.press("Meta+Shift+e");
+  await expect(reader).toBeFocused();
+  await expect(reader).toHaveAttribute("data-reader-offset", sectionOffset);
+  await page.keyboard.press("Meta+Alt+ArrowDown");
+  await expect(activeHeading).toContainText("Second subsection");
+  await page.keyboard.press("Meta+Alt+ArrowUp");
+  await expect(activeHeading).toContainText("First subsection");
+  await page.getByText("After the rule.", { exact: true }).click({
+    position: { x: 5, y: 8 },
+  });
+  await page.keyboard.press("k");
+  await expect
+    .poll(() => page.evaluate(() => getSelection().focusNode?.textContent))
+    .toBe("Before the rule.");
+  await page.keyboard.press("k");
+  await expect
+    .poll(() => page.evaluate(() => getSelection().focusNode?.textContent))
+    .toBe("First subsection");
+  await page.getByRole("heading", { name: "Child subsection" }).click({
+    position: { x: 5, y: 8 },
+  });
+  await expect(activeHeading).toContainText("Child subsection");
+
+  const toolbar = page.locator(".app-toolbar");
+  const order = await toolbar
+    .locator(":scope > .brand, :scope > button")
+    .evaluateAll((elements) =>
+      elements.map(
+        (el) => el.getAttribute("aria-label") || el.textContent.trim(),
+      ),
+    );
+  expect(order).toEqual([
+    "YAMDVYet Another MarkDown Viewer",
+    "Open Folder",
+    "Open Markdown Files",
+    "Search",
+    "Command Palette",
+    "Theme: system",
+    "Toggle Sidebar",
+    "Application Menu",
+  ]);
+  await toolbar.getByRole("button", { name: /^Theme:/ }).click();
+  for (const name of ["Light", "Dark", "System"]) {
+    await expect(
+      page.getByRole("menuitemradio", { name }).locator("svg").first(),
+    ).toBeVisible();
+  }
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".version")).toHaveText("v0.0.2");
   expect(await fs.readFile(file, "utf8")).toBe(source);
   expect(errors).toEqual([]);
   console.log(
-    `PASS ${desktop ? "desktop" : "browser"} cursor workflow: independent code wrapping, rendered-line cursor, document Vim/visual selection and clipboard, UI zoom shortcuts, retained preferences, unchanged source`,
+    `PASS ${desktop ? "desktop" : "browser"} cursor workflow: independent code wrapping, rendered-line cursor, document Vim/visual selection and clipboard, UI zoom shortcuts, retained preferences, horizontal navigation and sidebar resizing, section jumps and outline focus, horizontal rules, toolbar order and theme icons, unchanged source`,
   );
   console.log("Screenshot:", fixture);
 } finally {
